@@ -111,6 +111,46 @@ pub fn routes() -> Router<AppState> {
             "/invite/{token}",
             post(invites::accept).delete(invites::reject),
         )
+        // files
+        .route("/file", post(files::create_pending))
+        .route("/file/{file}/metadata", put(files::update_pending_metadata))
+        .route(
+            "/file/{file}/chunk",
+            post(files::upload_chunk).layer(axum::extract::DefaultBodyLimit::max(
+                files::MAX_CHUNK + 64 * 1024,
+            )),
+        )
+        .route(
+            "/share/{share}/item/{item}/link_files",
+            post(files::link_files),
+        )
+        .route("/share/{share}/item/{item}/files", get(files::item_files))
+        .route(
+            "/share/{share}/item/{item}/revisions/files",
+            get(files::item_revision_files),
+        )
+        .route(
+            "/share/{share}/item/{item}/file/restore",
+            post(files::restore_batch),
+        )
+        .route(
+            "/share/{share}/item/{item}/file/{file}/metadata",
+            put(files::update_metadata),
+        )
+        .route(
+            "/share/{share}/item/{item}/file/{file}/restore",
+            post(files::restore),
+        )
+        .route(
+            "/share/{share}/item/{item}/file/{file}/chunk/{chunk}",
+            get(files::download_chunk),
+        )
+        .route("/vault/usage/{share}", get(files::vault_usage))
+        .route("/public_link/files/{token}", get(files::public_files))
+        .route(
+            "/public_link/files/{token}/{file}/{chunk}",
+            get(files::public_chunk),
+        )
         // public links
         .route(
             "/share/{share}/item/{item}/public_link",

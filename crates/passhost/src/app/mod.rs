@@ -65,7 +65,10 @@ impl AppState {
         tokio::spawn(async move {
             loop {
                 if let Err(e) = crate::auth::sessions::cleanup(&state).await {
-                    tracing::warn!("cleanup failed: {e:?}");
+                    tracing::warn!("session cleanup failed: {e:?}");
+                }
+                if let Err(e) = crate::pass::files::cleanup(&state).await {
+                    tracing::warn!("file cleanup failed: {e:?}");
                 }
                 tokio::time::sleep(std::time::Duration::from_secs(3600)).await;
             }
