@@ -82,11 +82,13 @@ async fn load_or_create_secret(db: &Pool) -> anyhow::Result<Vec<u8>> {
         return Ok(hex::decode(v)?);
     }
     let secret = crate::util::random_bytes(32);
-    sqlx::query("INSERT INTO kv (k, v) VALUES ('secret_key', $1)")
+    sqlx::query("INSERT INTO kv (k, v) VALUES ('secret_key', $1) ON CONFLICT (k) DO NOTHING")
         .bind(hex::encode(&secret))
         .execute(db)
         .await?;
-    Ok(secret)
+    // Another instance may have won the race; use whatever is stored.
+    let (v,): (String,) = sqlx::query_as("SELECT v FROM kv WHERE k = 'secret_key'").fetch_one(db).await?;
+    Ok(hex::decode(v)?)
 }
 
 /// All API routes, relative to a base path.
