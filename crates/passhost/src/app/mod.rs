@@ -87,7 +87,9 @@ async fn load_or_create_secret(db: &Pool) -> anyhow::Result<Vec<u8>> {
         .execute(db)
         .await?;
     // Another instance may have won the race; use whatever is stored.
-    let (v,): (String,) = sqlx::query_as("SELECT v FROM kv WHERE k = 'secret_key'").fetch_one(db).await?;
+    let (v,): (String,) = sqlx::query_as("SELECT v FROM kv WHERE k = 'secret_key'")
+        .fetch_one(db)
+        .await?;
     Ok(hex::decode(v)?)
 }
 

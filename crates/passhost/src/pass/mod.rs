@@ -5,6 +5,9 @@ pub mod files;
 pub mod folders;
 pub mod invites;
 pub mod items;
+pub mod keys;
+pub mod members;
+pub mod public_links;
 pub mod shares;
 pub mod sync;
 pub mod user;
@@ -39,7 +42,90 @@ pub fn routes() -> Router<AppState> {
         .route("/share/{share}", get(shares::get).delete(shares::leave))
         .route("/share/{share}/hide", put(shares::hide))
         .route("/share/{share}/unhide", put(shares::unhide))
-        .route("/share/{share}/key", get(shares::keys))
+        .route("/share/{share}/key", get(shares::keys).post(keys::rotate))
+        .route(
+            "/share/{share}/key/pending",
+            get(keys::pending).post(keys::promote),
+        )
+        // members
+        .route("/share/{share}/user", get(members::list))
+        .route(
+            "/share/{share}/user/item/{item}",
+            get(members::list_for_item),
+        )
+        .route(
+            "/share/{share}/user/{member}",
+            get(members::get)
+                .put(members::update)
+                .delete(members::remove),
+        )
+        // invites
+        .route(
+            "/share/{share}/invite",
+            get(invites::list_for_share).post(invites::create),
+        )
+        .route("/share/{share}/invite/batch", post(invites::create_batch))
+        .route(
+            "/share/{share}/invite/check_address",
+            post(invites::check_address),
+        )
+        .route(
+            "/share/{share}/invite/new_user",
+            post(invites::create_new_user_invite),
+        )
+        .route(
+            "/share/{share}/invite/new_user/batch",
+            post(invites::create_new_user_batch),
+        )
+        .route(
+            "/share/{share}/invite/new_user/{invite}",
+            axum::routing::delete(invites::delete_new_user),
+        )
+        .route(
+            "/share/{share}/invite/new_user/{invite}/keys",
+            post(invites::promote_new_user),
+        )
+        .route(
+            "/share/{share}/invite/recommended_emails",
+            get(invites::recommended),
+        )
+        .route(
+            "/share/{share}/invite/recommended_emails/organization",
+            get(invites::recommended_org),
+        )
+        .route(
+            "/share/{share}/invite/recommended_emails/suggested",
+            get(invites::recommended_suggested),
+        )
+        .route(
+            "/share/{share}/invite/{invite}",
+            axum::routing::delete(invites::delete_for_share),
+        )
+        .route(
+            "/share/{share}/invite/{invite}/reminder",
+            post(invites::reminder),
+        )
+        .route("/invite", get(invites::list_mine))
+        .route("/invite/group", get(invites::group_invites))
+        .route(
+            "/invite/{token}",
+            post(invites::accept).delete(invites::reject),
+        )
+        // public links
+        .route(
+            "/share/{share}/item/{item}/public_link",
+            post(public_links::create),
+        )
+        .route("/public_link", get(public_links::list))
+        .route(
+            "/public_link/inactive",
+            axum::routing::delete(public_links::delete_inactive),
+        )
+        .route("/public_link/content/{token}", get(public_links::content))
+        .route(
+            "/public_link/{id}",
+            axum::routing::delete(public_links::delete),
+        )
         .route("/share/{share}/event", get(sync::share_latest))
         .route("/share/{share}/event/{event}", get(sync::share_events))
         // vaults
