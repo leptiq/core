@@ -59,6 +59,11 @@ pub struct AliasConfig {
     pub domains: Vec<String>,
     /// Address the inbound SMTP server listens on (e.g. "0.0.0.0:25"). Empty disables it.
     pub smtp_listen: String,
+    /// Host name of this server's MX, checked when verifying custom domains
+    /// (empty: any MX record is accepted).
+    pub mx_host: String,
+    /// Maximum aliases per user (0 = unlimited).
+    pub max_aliases: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,6 +99,8 @@ impl Default for Config {
                 enabled: false,
                 domains: vec![],
                 smtp_listen: String::new(),
+                mx_host: String::new(),
+                max_aliases: 0,
             },
             smtp: SmtpConfig {
                 host: String::new(),

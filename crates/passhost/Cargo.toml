@@ -33,6 +33,8 @@ tracing = "0.1"
 totp-rs = { version = "5", features = ["gen_secret"] }
 webauthn-rs = { version = "0.5", features = ["danger-allow-state-serialisation", "danger-credential-internals"] }
 url = "2"
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1", "tokio1-rustls-tls", "hostname"] }
+hickory-resolver = "0.25"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 zeroize = "1"
 

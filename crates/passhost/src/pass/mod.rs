@@ -167,6 +167,109 @@ pub fn routes() -> Router<AppState> {
             "/public_link/files/{token}/{file}/{chunk}",
             get(files::public_chunk),
         )
+        // aliases
+        .route("/share/{share}/alias/options", get(alias::options))
+        .route("/share/{share}/alias/custom", post(alias::create_custom))
+        .route("/share/{share}/alias/random", post(alias::create_random))
+        .route("/share/{share}/alias/bulk/get", post(alias::bulk_get))
+        .route(
+            "/share/{share}/item/with_alias",
+            post(alias::create_with_item),
+        )
+        .route("/share/{share}/alias/{item}", get(alias::get))
+        .route(
+            "/share/{share}/alias/{item}/mailbox",
+            post(alias::set_mailboxes),
+        )
+        .route("/share/{share}/alias/{item}/name", put(alias::set_name))
+        .route("/share/{share}/alias/{item}/note", put(alias::set_note))
+        .route("/share/{share}/alias/{item}/status", put(alias::set_status))
+        .route(
+            "/share/{share}/alias/{item}/contact",
+            get(alias::list_contacts).post(alias::create_contact),
+        )
+        .route(
+            "/share/{share}/alias/{item}/contact/{contact}",
+            get(alias::get_contact).delete(alias::delete_contact),
+        )
+        .route(
+            "/share/{share}/alias/{item}/contact/{contact}/blocked",
+            put(alias::block_contact),
+        )
+        .route("/share/{share}/alias/{item}/breaches", get(alias::breaches))
+        .route(
+            "/share/{share}/alias/{item}/breaches/resolved",
+            post(alias::breaches_resolved),
+        )
+        .route(
+            "/share/{share}/alias/{item}/breaches/{breach}/resolve",
+            post(alias::breach_resolve),
+        )
+        .route("/user/alias/settings", get(alias::get_settings))
+        .route(
+            "/user/alias/settings/default_alias_domain",
+            put(alias::set_default_domain),
+        )
+        .route(
+            "/user/alias/settings/default_mailbox_id",
+            put(alias::set_default_mailbox),
+        )
+        .route("/user/alias/domain", get(alias::list_domains))
+        .route("/user/alias/count", get(alias::count))
+        .route("/user/alias/missing", get(alias::missing))
+        .route(
+            "/user/alias/mailbox",
+            get(alias::mailboxes::list).post(alias::mailboxes::create),
+        )
+        .route(
+            "/user/alias/mailbox/{id}",
+            axum::routing::delete(alias::mailboxes::delete),
+        )
+        .route(
+            "/user/alias/mailbox/{id}/verify",
+            post(alias::mailboxes::verify).get(alias::mailboxes::resend),
+        )
+        .route(
+            "/user/alias/mailbox/{id}/email",
+            put(alias::mailboxes::change_email).delete(alias::mailboxes::cancel_email_change),
+        )
+        .route(
+            "/user/alias/custom_domain",
+            get(alias::domains::list).post(alias::domains::create),
+        )
+        .route(
+            "/user/alias/custom_domain/{id}",
+            get(alias::domains::get)
+                .post(alias::domains::verify)
+                .delete(alias::domains::delete),
+        )
+        .route(
+            "/user/alias/custom_domain/{id}/settings",
+            get(alias::domains::get_settings),
+        )
+        .route(
+            "/user/alias/custom_domain/{id}/settings/catch_all",
+            put(alias::domains::set_catch_all),
+        )
+        .route(
+            "/user/alias/custom_domain/{id}/settings/mailboxes",
+            put(alias::domains::set_mailboxes),
+        )
+        .route(
+            "/user/alias/custom_domain/{id}/settings/name",
+            put(alias::domains::set_name),
+        )
+        .route(
+            "/user/alias/custom_domain/{id}/settings/random_prefix",
+            put(alias::domains::set_random_prefix),
+        )
+        .route("/alias_sync/pending", get(alias::sl_pending))
+        .route("/alias_sync/status", get(alias::sl_status))
+        .route("/alias_sync/sync", post(alias::sl_disabled))
+        .route(
+            "/alias_sync/share/{share}/create",
+            post(alias::sl_disabled_share),
+        )
         // public links
         .route(
             "/share/{share}/item/{item}/public_link",

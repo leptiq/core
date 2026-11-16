@@ -66,11 +66,13 @@ pub async fn push_data(
     target_id: Option<&str>,
     data: Option<&str>,
 ) -> ApiResult<i64> {
-    let (seq,): (i64,) =
-        sqlx::query_as("SELECT COALESCE(MAX(seq), 0) + 1 FROM events WHERE user_id = $1")
-            .bind(user_id)
-            .fetch_one(&mut *conn)
-            .await?;
+    let (seq,): (i64,) = sqlx::query_as(
+        "INSERT INTO event_counters (user_id, seq) VALUES ($1, 1) \
+         ON CONFLICT (user_id) DO UPDATE SET seq = event_counters.seq + 1 RETURNING seq",
+    )
+    .bind(user_id)
+    .fetch_one(&mut *conn)
+    .await?;
     sqlx::query(
         "INSERT INTO events (user_id, seq, kind, share_id, target_id, data, created) VALUES ($1,$2,$3,$4,$5,$6,$7)",
     )

@@ -36,3 +36,15 @@ pub async fn connect(url: &str) -> anyhow::Result<Pool> {
 macro_rules! sql {
     ($($t:tt)*) => { sqlx::AssertSqlSafe(format!($($t)*)) };
 }
+
+/// Next value of a named counter (atomic on both backends).
+pub async fn next_counter(conn: &mut sqlx::AnyConnection, name: &str) -> Result<i64, sqlx::Error> {
+    let (v,): (i64,) = sqlx::query_as(
+        "INSERT INTO counters (name, value) VALUES ($1, 1) \
+         ON CONFLICT (name) DO UPDATE SET value = counters.value + 1 RETURNING value",
+    )
+    .bind(name)
+    .fetch_one(&mut *conn)
+    .await?;
+    Ok(v)
+}
