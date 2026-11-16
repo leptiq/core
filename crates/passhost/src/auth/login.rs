@@ -27,7 +27,7 @@ pub async fn find_user(state: &AppState, username: &str) -> ApiResult<Option<Srp
     let row: Option<(String, String, i64, String, String)> = if username.contains('@') {
         sqlx::query_as(
             "SELECT u.id, u.name, u.srp_version, u.srp_salt, u.srp_verifier FROM users u \
-             JOIN addresses a ON a.user_id = u.id WHERE a.email = $1",
+             JOIN addresses a ON a.user_id = u.id WHERE a.email = $1 AND u.pat_owner_id IS NULL",
         )
         .bind(&username)
         .fetch_optional(&state.db)
@@ -40,7 +40,7 @@ pub async fn find_user(state: &AppState, username: &str) -> ApiResult<Option<Srp
         None => {
             let local = username.split('@').next().unwrap_or_default().to_string();
             sqlx::query_as(
-                "SELECT id, name, srp_version, srp_salt, srp_verifier FROM users WHERE name = $1",
+                "SELECT id, name, srp_version, srp_salt, srp_verifier FROM users WHERE name = $1 AND pat_owner_id IS NULL",
             )
             .bind(&local)
             .fetch_optional(&state.db)

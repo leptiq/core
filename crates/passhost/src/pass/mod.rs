@@ -7,6 +7,8 @@ pub mod invites;
 pub mod items;
 pub mod keys;
 pub mod members;
+pub mod org;
+pub mod pat;
 pub mod public_links;
 pub mod security;
 pub mod shares;
@@ -270,6 +272,66 @@ pub fn routes() -> Router<AppState> {
             "/alias_sync/share/{share}/create",
             post(alias::sl_disabled_share),
         )
+        // organization
+        .route("/organization", get(org::get))
+        .route("/organization/settings", put(org::update))
+        .route(
+            "/organization/settings/password_policy",
+            put(org::update_password_policy),
+        )
+        .route("/organization/report", get(org::reports))
+        .route("/organization/report/client_data", post(org::store_report))
+        .route(
+            "/organization/report/user_shares",
+            get(org::user_shares_report),
+        )
+        .route(
+            "/organization/urlpause",
+            get(org::list_pauses).post(org::create_pause),
+        )
+        .route(
+            "/organization/urlpause/{id}",
+            put(org::update_pause).delete(org::delete_pause),
+        )
+        // breach monitoring (no data source)
+        .route("/breach", get(org::breaches))
+        .route("/breach/address/{a}/breaches", get(org::breaches))
+        .route("/breach/address/{a}/monitor", put(org::breach_noop))
+        .route("/breach/address/{a}/resolved", post(org::breach_noop))
+        .route("/breach/custom_email", post(org::breach_unavailable))
+        .route(
+            "/breach/custom_email/{e}",
+            axum::routing::delete(org::breach_noop),
+        )
+        .route("/breach/custom_email/{e}/breaches", get(org::breaches))
+        .route(
+            "/breach/custom_email/{e}/breaches/{b}/resolve",
+            put(org::breach_noop),
+        )
+        .route(
+            "/breach/custom_email/{e}/monitor",
+            put(org::breach_unavailable),
+        )
+        .route(
+            "/breach/custom_email/{e}/resend_verification",
+            post(org::breach_unavailable),
+        )
+        .route(
+            "/breach/custom_email/{e}/resolved",
+            put(org::breach_unavailable),
+        )
+        .route(
+            "/breach/custom_email/{e}/verify",
+            put(org::breach_unavailable),
+        )
+        // personal access tokens
+        .route("/personal-access-token/{pat}/access", post(pat::grant))
+        .route(
+            "/personal-access-token/{pat}/access/{share}",
+            axum::routing::delete(pat::revoke),
+        )
+        .route("/pat/monitor", post(pat::monitor_store))
+        .route("/pat/monitor/{pat}", get(pat::monitor_list))
         // public links
         .route(
             "/share/{share}/item/{item}/public_link",

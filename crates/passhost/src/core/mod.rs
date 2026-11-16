@@ -60,5 +60,17 @@ pub fn routes() -> Router<AppState> {
         .route("/core/v4/settings/{*field}", put(settings::update))
         .route("/core/v4/events/latest", get(events::latest))
         .route("/core/v4/events/{id}", get(events::get))
+        .route(
+            "/account/v4/personal-access-token",
+            get(crate::pass::pat::list).post(crate::pass::pat::create),
+        )
+        .route(
+            "/account/v4/personal-access-token/session",
+            post(crate::pass::pat::session),
+        )
+        .route(
+            "/account/v4/personal-access-token/{id}",
+            axum::routing::delete(crate::pass::pat::delete),
+        )
         .merge(misc::routes())
 }
