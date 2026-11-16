@@ -27,14 +27,21 @@ pub mod code {
     pub const PAID_PLAN_REQUIRED: i64 = 10004;
     pub const REFRESH_TOKEN_INVALID: i64 = 10013;
     pub const CONFLICT: i64 = 2511;
-    /// Pass: item/vault revision conflict.
-    pub const REVISION_CONFLICT: i64 = 2001;
-    /// Pass: session lock required.
+    /// Pass: the request was not made against the latest share keys.
+    pub const NOT_LATEST_KEYS: i64 = 300001;
+    /// Pass: item revision conflict.
+    pub const REVISION_CONFLICT: i64 = 300002;
+    /// Pass: share is disabled / was removed.
+    pub const DISABLED_SHARE: i64 = 300004;
+    /// Pass: key rotation payload is missing keys.
+    pub const ROTATION_INCOMPLETE: i64 = 300005;
+    /// Pass: resource limit (e.g. storage quota) exceeded.
+    pub const QUOTA_EXCEEDED: i64 = 300007;
+    /// Pass: the session is locked (PIN lock).
     pub const SESSION_LOCKED: i64 = 300008;
-    /// Pass: extra password required.
-    pub const EXTRA_PASSWORD_REQUIRED: i64 = 300010;
+    /// Missing scope (e.g. the Pass extra password has not been entered).
+    pub const MISSING_SCOPE: i64 = 9108;
     pub const FEATURE_DISABLED: i64 = 2032;
-    pub const QUOTA_EXCEEDED: i64 = 300004;
 }
 
 #[derive(Debug)]

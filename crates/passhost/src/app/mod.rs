@@ -97,16 +97,22 @@ async fn load_or_create_secret(db: &Pool) -> anyhow::Result<Vec<u8>> {
 }
 
 /// All API routes, relative to a base path.
-fn api_routes() -> Router<AppState> {
+fn api_routes(state: &AppState) -> Router<AppState> {
     Router::new()
         .route("/tests/ping", get(|| async { crate::util::ok_empty() }))
         .merge(crate::auth::routes())
         .merge(crate::core::routes())
-        .nest("/pass/v1", crate::pass::routes())
+        .nest(
+            "/pass/v1",
+            crate::pass::routes().layer(middleware::from_fn_with_state(
+                state.clone(),
+                crate::pass::security::guard,
+            )),
+        )
 }
 
 pub fn build_router(state: AppState) -> Router {
-    let api = api_routes().layer(middleware::from_fn_with_state(state.clone(), app_version));
+    let api = api_routes(&state).layer(middleware::from_fn_with_state(state.clone(), app_version));
     let mut router = Router::new();
     for base in &state.config.base_paths {
         let base = base.trim_end_matches('/');

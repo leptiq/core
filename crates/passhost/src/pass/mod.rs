@@ -8,6 +8,7 @@ pub mod items;
 pub mod keys;
 pub mod members;
 pub mod public_links;
+pub mod security;
 pub mod shares;
 pub mod sync;
 pub mod user;
@@ -34,6 +35,21 @@ pub fn routes() -> Router<AppState> {
         .route("/user/coupon/redeem", post(user::redeem_coupon))
         .route("/user/sync_event", get(sync::latest))
         .route("/user/sync_event/{event}", get(sync::get))
+        .route(
+            "/user/session/lock",
+            post(security::create_lock).delete(security::delete_lock),
+        )
+        .route("/user/session/lock/check", get(security::check))
+        .route("/user/session/lock/unlock", post(security::unlock))
+        .route("/user/session/lock/force_lock", post(security::force_lock))
+        .route(
+            "/user/srp",
+            get(security::has_srp)
+                .post(security::add_srp)
+                .delete(security::remove_srp),
+        )
+        .route("/user/srp/info", get(security::srp_info))
+        .route("/user/srp/auth", post(security::srp_auth))
         .route("/notification", get(user::notifications))
         .route("/notification/{id}", put(user::notification_state))
         // shares

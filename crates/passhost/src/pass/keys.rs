@@ -67,7 +67,11 @@ pub async fn rotate(
         .fetch_one(&mut *tx)
         .await?;
     if req.current_key_rotation != current {
-        return Err(ApiError::conflict("Key rotation is outdated"));
+        return Err(ApiError::new(
+            axum::http::StatusCode::UNPROCESSABLE_ENTITY,
+            crate::error::code::NOT_LATEST_KEYS,
+            "Key rotation is outdated",
+        ));
     }
     let new = current + 1;
     let t = now();
@@ -87,7 +91,11 @@ pub async fn rotate(
             .fetch_one(&mut *tx)
             .await?;
     if (req.item_keys.len() as i64) < top_level {
-        return Err(ApiError::bad_request("All item keys must be re-encrypted"));
+        return Err(ApiError::new(
+            axum::http::StatusCode::UNPROCESSABLE_ENTITY,
+            crate::error::code::ROTATION_INCOMPLETE,
+            "All item keys must be re-encrypted",
+        ));
     }
     for ik in &req.item_keys {
         let r = sqlx::query("UPDATE items SET key_rotation = $1 WHERE id = $2 AND vault_id = $3")

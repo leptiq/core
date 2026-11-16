@@ -31,6 +31,8 @@ tower = "0.5"
 tower-http = { version = "0.7", features = ["cors", "trace"] }
 tracing = "0.1"
 totp-rs = { version = "5", features = ["gen_secret"] }
+webauthn-rs = { version = "0.5", features = ["danger-allow-state-serialisation", "danger-credential-internals"] }
+url = "2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 zeroize = "1"
 
