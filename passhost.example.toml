@@ -1,0 +1,32 @@
+# passhost configuration. Every key can also be set via environment variables
+# prefixed with PASSHOST_ (nested keys use "__", e.g. PASSHOST_SMTP__HOST).
+
+bind = "0.0.0.0:8080"
+# SQLite:   "sqlite://data/passhost.db?mode=rwc"
+# Postgres: "postgres://passhost:secret@localhost/passhost"
+database_url = "sqlite://data/passhost.db?mode=rwc"
+public_url = "https://pass.example.com"
+# Users get addresses on this domain: <username>@<mail_domain>
+mail_domain = "example.com"
+# "open", "invite" (codes from `passhost admin invite`) or "closed"
+signup = "open"
+require_app_version = true
+data_dir = "data"
+cors_origins = ["*"]
+file_quota_bytes = 10737418240
+webauthn_rp_id = "example.com"
+# Optional: your own clearsigned SRP modulus (requires patched clients).
+# srp_modulus_file = "modulus.asc"
+
+[alias]
+enabled = false
+domains = ["alias.example.com"]
+smtp_listen = "0.0.0.0:2525"
+
+[smtp]
+host = ""
+port = 587
+username = ""
+password = ""
+from = "passhost@example.com"
+security = "starttls"
