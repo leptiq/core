@@ -303,3 +303,51 @@ pub fn aes_decrypt(key: &[u8; 32], b64: &str, ad: &str) -> Vec<u8> {
         )
         .unwrap()
 }
+
+/// Pass helpers.
+pub struct Vault {
+    pub share_id: String,
+    pub vault_id: String,
+    pub key: [u8; 32],
+}
+
+impl Client {
+    pub async fn create_vault(&self, name: &str) -> Vault {
+        let key: [u8; 32] = passhost::util::random_bytes(32).try_into().unwrap();
+        let content = aes_encrypt(&key, name.as_bytes(), "vaultcontent");
+        // Real clients PGP-encrypt the vault key to their address key; the
+        // server treats it as opaque, so base64 is enough here.
+        let r = self
+            .post(
+                "pass/v1/vault",
+                json!({ "AddressID": self.address_id, "Content": content, "ContentFormatVersion": 1,
+                        "EncryptedVaultKey": STANDARD.encode(key) }),
+            )
+            .await;
+        Vault {
+            share_id: r["Share"]["ShareID"].as_str().unwrap().into(),
+            vault_id: r["Share"]["VaultID"].as_str().unwrap().into(),
+            key,
+        }
+    }
+
+    /// Creates an item; returns (item id, item key).
+    pub async fn create_item(&self, vault: &Vault, plaintext: &str) -> (String, [u8; 32], Value) {
+        let item_key: [u8; 32] = passhost::util::random_bytes(32).try_into().unwrap();
+        let r = self
+            .post(
+                &format!("pass/v1/share/{}/item", vault.share_id),
+                json!({
+                    "KeyRotation": 1, "ContentFormatVersion": 8,
+                    "Content": aes_encrypt(&item_key, plaintext.as_bytes(), "itemcontent"),
+                    "ItemKey": aes_encrypt(&vault.key, &item_key, "itemkey"),
+                }),
+            )
+            .await;
+        (
+            r["Item"]["ItemID"].as_str().unwrap().into(),
+            item_key,
+            r["Item"].clone(),
+        )
+    }
+}
