@@ -83,32 +83,32 @@ pub async fn guard(State(state): State<AppState>, req: Request, next: Next) -> R
             Ok(MaybeSession(s)) => Some(s),
             Err(_) => None,
         };
-    if let Some(s) = &session {
-        if let Some(user_id) = &s.user_id {
-            if !exempt_srp {
-                match needs_extra_password(&state, user_id, &s.uid).await {
-                    Ok(true) => {
-                        return ApiError::new(
-                            StatusCode::FORBIDDEN,
-                            code::MISSING_SCOPE,
-                            "Extra password required",
-                        )
-                        .into_response();
-                    }
-                    Ok(false) => {}
-                    Err(e) => return e.into_response(),
+    if let Some(s) = &session
+        && let Some(user_id) = &s.user_id
+    {
+        if !exempt_srp {
+            match needs_extra_password(&state, user_id, &s.uid).await {
+                Ok(true) => {
+                    return ApiError::new(
+                        StatusCode::FORBIDDEN,
+                        code::MISSING_SCOPE,
+                        "Extra password required",
+                    )
+                    .into_response();
                 }
+                Ok(false) => {}
+                Err(e) => return e.into_response(),
             }
-            if !exempt_lock {
-                match is_locked(&state, &s.uid).await {
-                    Ok(true) => return locked_error().into_response(),
-                    Ok(false) => {
-                        if let Err(e) = touch(&state, &s.uid).await {
-                            return e.into_response();
-                        }
+        }
+        if !exempt_lock {
+            match is_locked(&state, &s.uid).await {
+                Ok(true) => return locked_error().into_response(),
+                Ok(false) => {
+                    if let Err(e) = touch(&state, &s.uid).await {
+                        return e.into_response();
                     }
-                    Err(e) => return e.into_response(),
                 }
+                Err(e) => return e.into_response(),
             }
         }
     }

@@ -44,15 +44,15 @@ fn header<'a>(parts: &'a Parts, name: &str) -> Option<&'a str> {
     parts.headers.get(name).and_then(|v| v.to_str().ok())
 }
 
-pub fn cookie<'a>(parts: &'a Parts, name: &str) -> Option<String> {
+pub fn cookie(parts: &Parts, name: &str) -> Option<String> {
     for value in parts.headers.get_all("cookie") {
         let Ok(s) = value.to_str() else { continue };
         for pair in s.split(';') {
             let pair = pair.trim();
-            if let Some((k, v)) = pair.split_once('=') {
-                if k == name {
-                    return Some(v.to_string());
-                }
+            if let Some((k, v)) = pair.split_once('=')
+                && k == name
+            {
+                return Some(v.to_string());
             }
         }
     }

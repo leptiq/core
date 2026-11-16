@@ -226,12 +226,11 @@ pub async fn auth(
     .await?;
     let twofa = twofa::info(&state, &user.id).await?;
     let needs_2fa = twofa["Enabled"].as_i64().unwrap_or(0) != 0;
-    if needs_2fa {
-        if let Some(code) = req.two_factor_code.as_deref() {
-            if !twofa::check_totp(&state, &user.id, code).await? {
-                return Err(wrong_password());
-            }
-        }
+    if needs_2fa
+        && let Some(code) = req.two_factor_code.as_deref()
+        && !twofa::check_totp(&state, &user.id, code).await?
+    {
+        return Err(wrong_password());
     }
     let pending = needs_2fa && req.two_factor_code.is_none();
     let client_id = headers

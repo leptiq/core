@@ -212,22 +212,12 @@ pub struct CreateReq {
     pub folder_id: Option<String>,
 }
 
+#[derive(Default)]
 pub struct NewItemOpts {
     pub alias_email: Option<String>,
     pub trashed: bool,
     pub create_time: Option<i64>,
     pub modify_time: Option<i64>,
-}
-
-impl Default for NewItemOpts {
-    fn default() -> Self {
-        Self {
-            alias_email: None,
-            trashed: false,
-            create_time: None,
-            modify_time: None,
-        }
-    }
 }
 
 /// Inserts a new item in the share's vault (within a transaction).

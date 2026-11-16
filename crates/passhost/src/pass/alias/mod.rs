@@ -287,10 +287,10 @@ async fn settings_domain(state: &AppState, user_id: &str) -> ApiResult<String> {
             .fetch_optional(&state.db)
             .await?;
     let domains = user_domains(state, user_id).await?;
-    if let Some(d) = row.and_then(|r| r.0) {
-        if domains.iter().any(|(x, _)| *x == d) {
-            return Ok(d);
-        }
+    if let Some(d) = row.and_then(|r| r.0)
+        && domains.iter().any(|(x, _)| *x == d)
+    {
+        return Ok(d);
     }
     domains
         .first()
@@ -812,14 +812,13 @@ pub async fn set_default_domain(
     user: AuthUser,
     Json(req): Json<DefaultDomainReq>,
 ) -> ApiResult<Json<Value>> {
-    if let Some(d) = &req.default_alias_domain {
-        if !user_domains(&state, &user.user_id)
+    if let Some(d) = &req.default_alias_domain
+        && !user_domains(&state, &user.user_id)
             .await?
             .iter()
             .any(|(x, _)| x == d)
-        {
-            return Err(ApiError::bad_request("Unknown domain"));
-        }
+    {
+        return Err(ApiError::bad_request("Unknown domain"));
     }
     ensure_settings(&state, &user.user_id).await?;
     sqlx::query("UPDATE alias_settings SET default_domain = $1 WHERE user_id = $2")

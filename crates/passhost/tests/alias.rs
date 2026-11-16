@@ -72,7 +72,7 @@ async fn smtp_send(port: u16, from: &str, to: &str, body: &str) -> String {
     let mut last = String::new();
     r.read_line(&mut line).await.unwrap();
     for cmd in [
-        format!("HELO test"),
+        "HELO test".to_string(),
         format!("MAIL FROM:<{from}>"),
         format!("RCPT TO:<{to}>"),
         "DATA".into(),

@@ -92,7 +92,7 @@ pub async fn create(
     if dup.is_some() {
         return Err(ApiError::conflict("Domain already registered"));
     }
-    let id = crate::db::next_counter(&mut *tx, "custom_domains").await?;
+    let id = crate::db::next_counter(&mut tx, "custom_domains").await?;
     sqlx::query("INSERT INTO custom_domains (id, user_id, domain, verification_token, created) VALUES ($1,$2,$3,$4,$5)")
         .bind(id)
         .bind(&user.user_id)
@@ -176,8 +176,7 @@ pub async fn verify(
         Err(_) => vec![],
     };
     let expected = state.config.alias.mx_host.to_lowercase();
-    let mx =
-        !mx_hosts.is_empty() && (expected.is_empty() || mx_hosts.iter().any(|h| *h == expected));
+    let mx = !mx_hosts.is_empty() && (expected.is_empty() || mx_hosts.contains(&expected));
     // Forwarded mail is not DKIM-signed by passhost, so DKIM is not required.
     let dkim = true;
     sqlx::query(

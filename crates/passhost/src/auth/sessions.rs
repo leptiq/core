@@ -178,10 +178,10 @@ fn cookie_from(headers: &HeaderMap, name: &str) -> Option<String> {
     for value in headers.get_all("cookie") {
         let Ok(s) = value.to_str() else { continue };
         for pair in s.split(';') {
-            if let Some((k, v)) = pair.trim().split_once('=') {
-                if k == name {
-                    return Some(v.to_string());
-                }
+            if let Some((k, v)) = pair.trim().split_once('=')
+                && k == name
+            {
+                return Some(v.to_string());
             }
         }
     }

@@ -367,16 +367,16 @@ pub async fn revoke(
             .bind(&pat_user)
             .fetch_all(&mut *tx)
             .await?;
-    if targets.is_empty() {
-        if let Some(vault_id) = &own_vault {
-            targets = sqlx::query_as(
-                "SELECT id FROM shares WHERE vault_id = $1 AND user_id = $2 AND deleted = 0",
-            )
-            .bind(vault_id)
-            .bind(&pat_user)
-            .fetch_all(&mut *tx)
-            .await?;
-        }
+    if targets.is_empty()
+        && let Some(vault_id) = &own_vault
+    {
+        targets = sqlx::query_as(
+            "SELECT id FROM shares WHERE vault_id = $1 AND user_id = $2 AND deleted = 0",
+        )
+        .bind(vault_id)
+        .bind(&pat_user)
+        .fetch_all(&mut *tx)
+        .await?;
     }
     for (sid,) in targets {
         let s = shares::load_any(&mut tx, &sid).await?;

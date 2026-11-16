@@ -47,10 +47,10 @@ pub async fn send_code(state: &AppState, to: &str, code: &str) {
         .body(format!(
             "Your verification code is: {code}\n\nIf you did not request this, ignore this email.\n"
         ));
-    if let Ok(m) = msg {
-        if let Err(e) = t.send(m).await {
-            tracing::warn!("failed to send verification code: {e}");
-        }
+    if let Ok(m) = msg
+        && let Err(e) = t.send(m).await
+    {
+        tracing::warn!("failed to send verification code: {e}");
     }
 }
 
@@ -105,14 +105,14 @@ pub fn split(raw: &[u8]) -> (Vec<(String, String)>, Vec<u8>) {
 
 /// Extracts (display name, address) from a header value like `"Name" <a@b>`.
 pub fn parse_address(value: &str) -> (Option<String>, String) {
-    if let (Some(l), Some(r)) = (value.rfind('<'), value.rfind('>')) {
-        if l < r {
-            let name = value[..l].trim().trim_matches('"').trim();
-            return (
-                (!name.is_empty()).then(|| name.to_string()),
-                value[l + 1..r].trim().to_lowercase(),
-            );
-        }
+    if let (Some(l), Some(r)) = (value.rfind('<'), value.rfind('>'))
+        && l < r
+    {
+        let name = value[..l].trim().trim_matches('"').trim();
+        return (
+            (!name.is_empty()).then(|| name.to_string()),
+            value[l + 1..r].trim().to_lowercase(),
+        );
     }
     (None, value.trim().to_lowercase())
 }

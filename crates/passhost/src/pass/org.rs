@@ -35,11 +35,11 @@ pub async fn settings(state: &AppState) -> ApiResult<Value> {
         .fetch_optional(&state.db)
         .await?;
     let mut base = default_settings();
-    if let Some((v,)) = row {
-        if let Ok(Value::Object(stored)) = serde_json::from_str::<Value>(&v) {
-            for (k, v) in stored {
-                base[k] = v;
-            }
+    if let Some((v,)) = row
+        && let Ok(Value::Object(stored)) = serde_json::from_str::<Value>(&v)
+    {
+        for (k, v) in stored {
+            base[k] = v;
         }
     }
     Ok(base)
