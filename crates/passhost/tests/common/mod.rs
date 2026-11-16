@@ -23,6 +23,10 @@ pub async fn server() -> TestServer {
 }
 
 pub async fn server_with(f: impl FnOnce(&mut Config)) -> TestServer {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter("passhost=error")
+        .with_test_writer()
+        .try_init();
     let dir = tempfile::tempdir().unwrap();
     let mut config = Config::default();
     config.database_url = std::env::var("PASSHOST_TEST_DATABASE_URL")

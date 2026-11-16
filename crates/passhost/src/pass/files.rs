@@ -667,7 +667,7 @@ pub async fn vault_usage(
 ) -> ApiResult<Json<Value>> {
     let share = shares::load(&state, &user.user_id, &share_id).await?;
     let rows: Vec<(String, i64)> = sqlx::query_as(
-        "SELECT i.item_id, SUM(f.total_size) FROM item_files i JOIN files f ON f.id = i.file_id JOIN items it ON it.id = i.item_id \
+        "SELECT i.item_id, CAST(SUM(f.total_size) AS BIGINT) FROM item_files i JOIN files f ON f.id = i.file_id JOIN items it ON it.id = i.item_id \
          WHERE it.vault_id = $1 GROUP BY i.item_id ORDER BY SUM(f.total_size) DESC",
     )
     .bind(&share.vault_id)
