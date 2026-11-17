@@ -79,7 +79,7 @@ The official clients are open source but hard-wired to Proton's servers. Each
 needs a build that points at your domain; see [docs/clients.md](docs/clients.md).
 
 - **Browser extension / web app**: build WebClients with `API_ENV=<domain>` and
-  host the account app for login (`clients/build-webclients.sh`).
+  host the account app for login ([leptiq/webclients](https://github.com/leptiq/webclients)).
 - **Android**: build `android-pass` with `PROD_ENV_URL=<domain>`
   (`clients/build-android.sh`).
 - **Pass CLI**: `PROTON_PASS_ENVIRONMENT=https://<host> pass login --pat <token>`.
