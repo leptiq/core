@@ -2,8 +2,6 @@
 //! then linked to an item revision together with the file key (encrypted
 //! with the item key). The server only ever sees ciphertext.
 
-use std::path::PathBuf;
-
 use axum::{
     Json,
     body::Body,
@@ -31,49 +29,7 @@ use crate::{
 pub const MAX_CHUNK: usize = 16 * 1024 * 1024;
 pub const MAX_CHUNKS: i64 = 10_000;
 
-#[derive(Clone)]
-pub struct BlobStore {
-    root: PathBuf,
-}
-
-impl BlobStore {
-    pub fn new(root: &str) -> anyhow::Result<Self> {
-        let root = PathBuf::from(root).join("blobs");
-        std::fs::create_dir_all(&root)?;
-        Ok(Self { root })
-    }
-
-    fn path(&self, key: &str) -> PathBuf {
-        // Keys are server-generated IDs; still refuse anything path-like.
-        let safe: String = key
-            .chars()
-            .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
-            .collect();
-        let (a, b) = (
-            safe.get(0..2).unwrap_or("00"),
-            safe.get(2..4).unwrap_or("00"),
-        );
-        self.root.join(a).join(b).join(safe)
-    }
-
-    pub async fn put(&self, key: &str, data: &[u8]) -> std::io::Result<()> {
-        let p = self.path(key);
-        if let Some(dir) = p.parent() {
-            tokio::fs::create_dir_all(dir).await?;
-        }
-        let tmp = p.with_extension("tmp");
-        tokio::fs::write(&tmp, data).await?;
-        tokio::fs::rename(tmp, p).await
-    }
-
-    pub async fn get(&self, key: &str) -> std::io::Result<Vec<u8>> {
-        tokio::fs::read(self.path(key)).await
-    }
-
-    pub async fn delete(&self, key: &str) {
-        let _ = tokio::fs::remove_file(self.path(key)).await;
-    }
-}
+pub use leptiq_core::blobs::BlobStore;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -198,7 +154,7 @@ pub async fn upload_chunk(
     }
     let chunk_id = new_id();
     state
-        .ext::<BlobStore>()
+        .blobs
         .put(&chunk_id, &data)
         .await
         .map_err(ApiError::internal)?;
@@ -242,7 +198,7 @@ pub async fn upload_chunk(
     adjust_usage(&mut tx, &user.user_id, size).await?;
     tx.commit().await?;
     if let Some((old_chunk, _)) = old {
-        state.ext::<BlobStore>().delete(&old_chunk).await;
+        state.blobs.delete(&old_chunk).await;
     }
     Ok(ok(json!({})))
 }
@@ -512,7 +468,7 @@ pub async fn download_chunk(
     drop(conn);
     let (chunk,) = row.ok_or_else(|| ApiError::not_found("Chunk"))?;
     let data = state
-        .ext::<BlobStore>()
+        .blobs
         .get(&chunk)
         .await
         .map_err(|_| ApiError::not_found("Chunk"))?;
@@ -741,7 +697,7 @@ pub async fn public_chunk(
     .await?;
     let (chunk,) = row.ok_or_else(|| ApiError::not_found("Chunk"))?;
     let data = state
-        .ext::<BlobStore>()
+        .blobs
         .get(&chunk)
         .await
         .map_err(|_| ApiError::not_found("Chunk"))?;
@@ -775,7 +731,7 @@ pub async fn cleanup(state: &AppState) -> anyhow::Result<()> {
             .await?;
         tx.commit().await?;
         for (c,) in chunks {
-            state.ext::<BlobStore>().delete(&c).await;
+            state.blobs.delete(&c).await;
         }
     }
     Ok(())

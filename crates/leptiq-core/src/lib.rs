@@ -8,6 +8,7 @@
 
 pub mod app;
 pub mod auth;
+pub mod blobs;
 pub mod config;
 pub mod core;
 pub mod db;

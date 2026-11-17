@@ -30,6 +30,8 @@ pub struct Inner {
     pub modulus: SrpModulus,
     /// Server secret for HMACs (persisted in the kv table if not configured).
     pub secret: Vec<u8>,
+    /// Storage for client-encrypted blobs (attachments, file blocks...).
+    pub blobs: crate::blobs::BlobStore,
     /// The products this server runs (Pass, ...).
     pub products: Vec<Arc<dyn Product>>,
     /// Product-owned runtime state, set up by [`Product::init`].
@@ -58,6 +60,7 @@ impl AppState {
         } else {
             config.secret_key.as_bytes().to_vec()
         };
+        let blobs = crate::blobs::BlobStore::new(&config.data_dir)?;
         let mut ext = http::Extensions::new();
         for product in &products {
             product.init(&config, &mut ext)?;
@@ -67,6 +70,7 @@ impl AppState {
             db,
             modulus,
             secret,
+            blobs,
             products,
             ext,
         })))

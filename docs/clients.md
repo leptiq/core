@@ -4,27 +4,24 @@ Proton's clients are GPL-3.0 and have build-time switches for other
 environments. leptiq does not ship modified client code. The scripts in
 `clients/` clone the upstream repositories, adjust configuration, and build.
 
-## Browser extension (Chrome / Firefox)
+## Browser extension, web apps and account app
+
+Use [leptiq/webclients](https://github.com/leptiq/webclients). It patches Proton's
+WebClients with the Leptiq branding and with plans and upsells hidden, then builds
+the apps for your domain:
 
 ```bash
-DOMAIN=example.com ./clients/build-webclients.sh
-DOMAIN=example.com BUILD_TARGET=firefox ./clients/build-webclients.sh
+DOMAIN=example.com ./build.sh                                  # account, pass, pass-extension
+DOMAIN=example.com APPS="pass-extension" BUILD_TARGET=firefox ./build.sh
 ```
 
-The script builds the extension, the Pass web app and Proton's **account
-app**, which the extension and web app need for login and signup.
-
-- `API_ENV=example.com` makes the extension use `https://pass.example.com/api` and
-  log in through `https://account.example.com`. The extension's webpack config
-  also rewrites the manifest's `account.`/`pass.` match patterns to that domain,
-  which lets the account page hand the session to the extension.
+- `API_ENV=<domain>` makes the extension use `https://pass.<domain>/api` and log in
+  through `https://account.<domain>`. The extension's webpack config also rewrites
+  the manifest's `account.`/`pass.` match patterns to that domain, which lets the
+  account page hand the session to the extension.
 - The account app does the SRP signup/login and then forks the session to the
-  extension (`auth/v4/sessions/forks`). Serve its `dist/` at
-  `account.example.com`, with `/api` proxied to leptiq (see
-  `docs/deployment.md`).
-- The script works around the parts of the public WebClients mirror that only
-  build inside Proton's network (a missing preinstall script, internal npm
-  registries, internal-only test packages). It only edits the checkout.
+  extension or web app (`auth/v4/sessions/forks`). Serve its `dist/` at
+  `account.<domain>`, with `/api` proxied to the server (see `docs/deployment.md`).
 - For Firefox, load `dist/` as a temporary add-on (`about:debugging`) or sign it
   with `web-ext sign` for a permanent install.
 
@@ -40,7 +37,7 @@ accepted for each host (`pass.`, `account.`, `account-api.`).
 
 ## Pass web app
 
-`build-webclients.sh` also builds the web app (`applications/pass/dist`).
+`build.sh` in leptiq/webclients also builds the web app (`applications/pass/dist`).
 Serve it at `pass.example.com` with `/api` proxied to leptiq (see
 `docs/deployment.md`). It signs in through the account app at
 `account.<same domain>`, which forks the session to it.

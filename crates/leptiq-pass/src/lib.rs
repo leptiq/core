@@ -77,7 +77,6 @@ impl Product for PassProduct {
 
     fn init(&self, config: &config::Config, ext: &mut http::Extensions) -> anyhow::Result<()> {
         ext.insert(config.section::<PassConfig>("pass")?);
-        ext.insert(files::BlobStore::new(&config.data_dir)?);
         Ok(())
     }
 
