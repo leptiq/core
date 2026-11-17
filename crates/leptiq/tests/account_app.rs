@@ -44,8 +44,16 @@ async fn account_dashboard_endpoints() {
 
     // Settings fields the settings pages read.
     let settings = c.get("core/v4/settings").await;
-    for field in ["Mnemonic", "ProductDisabled", "OrganizationPolicy", "UsedClients"] {
-        assert!(!settings["UserSettings"][field].is_null(), "settings lack {field}: {settings}");
+    for field in [
+        "Mnemonic",
+        "ProductDisabled",
+        "OrganizationPolicy",
+        "UsedClients",
+    ] {
+        assert!(
+            !settings["UserSettings"][field].is_null(),
+            "settings lack {field}: {settings}"
+        );
     }
     assert_eq!(settings["UserSettings"]["HighSecurity"]["SummaryEmail"], 0);
 }

@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use passhost::{AppState, config::Config, db};
+use leptiq::Config;
 use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
@@ -24,7 +24,7 @@ enum Command {
     Migrate,
     /// Administrative commands.
     #[command(subcommand)]
-    Admin(passhost::app::admin::AdminCommand),
+    Admin(leptiq::admin::AdminCommand),
 }
 
 #[tokio::main]
@@ -36,20 +36,20 @@ async fn main() -> anyhow::Result<()> {
         .init();
     let cli = Cli::parse();
     let config = Config::load(&cli.config)?;
-    let pool = db::connect(&config.database_url).await?;
     match cli.command.unwrap_or(Command::Serve) {
         Command::Migrate => {
+            leptiq::build_state(config).await?;
             tracing::info!("migrations applied");
         }
         Command::Admin(cmd) => {
-            let state = AppState::new(config, pool).await?;
-            passhost::app::admin::run(&state, cmd).await?;
+            let state = leptiq::build_state(config).await?;
+            leptiq::admin::run(&state, cmd).await?;
         }
         Command::Serve => {
             let bind = config.bind.clone();
-            let state = AppState::new(config, pool).await?;
+            let state = leptiq::build_state(config).await?;
             state.spawn_background_tasks();
-            let router = passhost::build_router(state);
+            let router = leptiq::build_router(state);
             let listener = tokio::net::TcpListener::bind(&bind).await?;
             tracing::info!("listening on {bind}");
             axum::serve(listener, router).await?;

@@ -65,17 +65,5 @@ pub fn routes() -> Router<AppState> {
         // v5 has the same response shape as v4.
         .route("/core/v5/events/latest", get(events::latest))
         .route("/core/v5/events/{id}", get(events::get))
-        .route(
-            "/account/v4/personal-access-token",
-            get(crate::pass::pat::list).post(crate::pass::pat::create),
-        )
-        .route(
-            "/account/v4/personal-access-token/session",
-            post(crate::pass::pat::session),
-        )
-        .route(
-            "/account/v4/personal-access-token/{id}",
-            axum::routing::delete(crate::pass::pat::delete),
-        )
         .merge(misc::routes())
 }

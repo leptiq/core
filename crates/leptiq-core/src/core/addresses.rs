@@ -202,7 +202,9 @@ pub async fn setup(
         .execute(&mut *tx)
         .await?;
     events::push(&mut tx, &user.user_id, kind::ADDRESS, None, Some(&id)).await?;
-    crate::pass::invites::on_address_created(&mut tx, &email).await?;
+    for product in &state.products {
+        product.on_address_created(&mut tx, &email).await?;
+    }
     tx.commit().await?;
     Ok(ok(json!({ "Address": address_json(&state, &id).await? })))
 }

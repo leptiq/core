@@ -254,7 +254,9 @@ pub async fn create_user(
         Some(&address_id),
     )
     .await?;
-    crate::pass::invites::on_address_created(&mut tx, &email).await?;
+    for product in &state.products {
+        product.on_address_created(&mut tx, &email).await?;
+    }
     tx.commit().await?;
     if let (SignupPolicy::Invite, Some(code)) = (state.config.signup, invite) {
         sqlx::query("UPDATE signup_invites SET used_by = $1 WHERE code = $2")
@@ -313,7 +315,9 @@ pub async fn check_code() -> Json<Value> {
 /// `PUT core/v4/users/delete`: delete own account (needs password scope).
 pub async fn delete_user(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json<Value>> {
     crate::auth::login::require_password_scope(&user)?;
-    crate::pass::shares::delete_all_for_user(&state, &user.user_id).await?;
+    for product in &state.products {
+        product.on_user_deleted(&state, &user.user_id).await?;
+    }
     sqlx::query("DELETE FROM users WHERE id = $1")
         .bind(&user.user_id)
         .execute(&state.db)

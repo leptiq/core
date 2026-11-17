@@ -12,9 +12,10 @@ pub mod core;
 pub mod db;
 pub mod error;
 pub mod events;
-pub mod pass;
+pub mod product;
 pub mod srp;
 pub mod util;
 
 pub use app::{AppState, build_router};
 pub use config::Config;
+pub use product::Product;

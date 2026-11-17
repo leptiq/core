@@ -3,6 +3,7 @@
 
 use axum::{
     Json, Router,
+    extract::State,
     routing::{get, post, put},
 };
 use serde_json::{Value, json};
@@ -102,6 +103,12 @@ async fn v6_events() -> Json<Value> {
     ok(json!({ "EventID": "passhost-v6", "More": false, "Refresh": false }))
 }
 
+/// The apps this server runs: one per registered product.
+async fn user_apps(State(state): State<AppState>) -> Json<Value> {
+    let apps: Vec<&str> = state.products.iter().map(|p| p.name()).collect();
+    ok(json!({ "Apps": apps }))
+}
+
 async fn subscription() -> Json<Value> {
     ok(json!({ "Subscription": null, "UpcomingSubscription": null }))
 }
@@ -178,7 +185,7 @@ pub fn routes() -> Router<AppState> {
         .route("/core/v4/reports/sentry/{*rest}", post(sentry_report))
         .route("/core/v4/metrics", post(empty))
         .route("/core/v4/images/logo", get(no_logo))
-        .route("/core/v4/users/apps", get(|| async { ok(json!({ "Apps": ["pass"] })) }))
+        .route("/core/v4/users/apps", get(user_apps))
         .route("/core/v4/checklist/{*rest}", get(|| async { ok(json!({ "Items": [], "CreatedAt": 0, "ExpiresAt": 0, "Visible": false, "Display": "Hidden" })) }))
         .route("/account/v1/onboarding", get(empty).put(empty))
         .route("/core/v4/settings/telemetry", put(empty))

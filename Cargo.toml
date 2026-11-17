@@ -1,8 +1,44 @@
 [workspace]
 resolver = "3"
-members = ["crates/*"]
+members = ["crates/leptiq-core", "crates/leptiq-pass", "crates/leptiq"]
 
 [workspace.package]
 edition = "2024"
 license = "AGPL-3.0-or-later"
 version = "0.1.0"
+
+[workspace.dependencies]
+leptiq-core = { path = "crates/leptiq-core" }
+leptiq-pass = { path = "crates/leptiq-pass" }
+anyhow = "1"
+axum = { version = "0.8", features = ["macros", "multipart"] }
+axum-extra = { version = "0.12", features = ["cookie"] }
+base64 = "0.22"
+clap = { version = "4", features = ["derive", "env"] }
+figment = { version = "0.10", features = ["toml", "env"] }
+futures-util = { version = "0.3", default-features = false }
+hex = "0.4"
+hmac = "0.12"
+http = "1"
+proton-srp = "0.8.4"
+pgp = "0.21"
+rand = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "any", "sqlite", "postgres", "migrate", "macros"] }
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.7", features = ["cors", "trace"] }
+tracing = "0.1"
+totp-rs = { version = "5", features = ["gen_secret"] }
+webauthn-rs = { version = "0.5", features = ["danger-allow-state-serialisation", "danger-credential-internals"] }
+url = "2"
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1", "tokio1-rustls-tls", "hostname"] }
+hickory-resolver = "0.25"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+zeroize = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "cookies", "multipart"] }
+tempfile = "3"
+aes-gcm = "0.10"

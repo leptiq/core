@@ -1,5 +1,3 @@
-pub mod admin;
-
 use std::sync::Arc;
 
 use axum::{
@@ -19,6 +17,7 @@ use crate::{
     config::Config,
     db::Pool,
     error::{ApiError, code},
+    product::Product,
     srp::SrpModulus,
 };
 
@@ -31,7 +30,10 @@ pub struct Inner {
     pub modulus: SrpModulus,
     /// Server secret for HMACs (persisted in the kv table if not configured).
     pub secret: Vec<u8>,
-    pub blobs: crate::pass::files::BlobStore,
+    /// The products this server runs (Pass, ...).
+    pub products: Vec<Arc<dyn Product>>,
+    /// Product-owned runtime state, set up by [`Product::init`].
+    ext: http::Extensions,
 }
 
 impl std::ops::Deref for AppState {
@@ -42,24 +44,49 @@ impl std::ops::Deref for AppState {
 }
 
 impl AppState {
-    pub async fn new(config: Config, db: Pool) -> anyhow::Result<Self> {
+    /// Builds the state for `products`, running their migrations and
+    /// [`Product::init`]. Core migrations must already have run
+    /// ([`crate::db::migrate`]).
+    pub async fn new(
+        config: Config,
+        db: Pool,
+        products: Vec<Arc<dyn Product>>,
+    ) -> anyhow::Result<Self> {
         let modulus = SrpModulus::load(config.srp_modulus_file.as_deref())?;
         let secret = if config.secret_key.is_empty() {
             load_or_create_secret(&db).await?
         } else {
             config.secret_key.as_bytes().to_vec()
         };
-        let blobs = crate::pass::files::BlobStore::new(&config.data_dir)?;
+        let mut ext = http::Extensions::new();
+        for product in &products {
+            product.init(&config, &mut ext)?;
+        }
         Ok(Self(Arc::new(Inner {
             config,
             db,
             modulus,
             secret,
-            blobs,
+            products,
+            ext,
         })))
     }
 
-    /// Starts background jobs (expired session cleanup, alias SMTP server...).
+    /// Product-owned state stored by [`Product::init`].
+    ///
+    /// Panics if no product registered a value of this type: that is a
+    /// wiring bug, not a runtime condition.
+    pub fn ext<T: Send + Sync + Clone + 'static>(&self) -> &T {
+        self.0.ext.get::<T>().unwrap_or_else(|| {
+            panic!(
+                "no {} registered by any product",
+                std::any::type_name::<T>()
+            )
+        })
+    }
+
+    /// Starts background jobs: core's expired-session cleanup plus each
+    /// product's own jobs.
     pub fn spawn_background_tasks(&self) {
         let state = self.clone();
         tokio::spawn(async move {
@@ -67,13 +94,12 @@ impl AppState {
                 if let Err(e) = crate::auth::sessions::cleanup(&state).await {
                     tracing::warn!("session cleanup failed: {e:?}");
                 }
-                if let Err(e) = crate::pass::files::cleanup(&state).await {
-                    tracing::warn!("file cleanup failed: {e:?}");
-                }
                 tokio::time::sleep(std::time::Duration::from_secs(3600)).await;
             }
         });
-        crate::pass::alias::smtp::spawn(self.clone());
+        for product in &self.products {
+            product.spawn_background(self);
+        }
     }
 }
 
@@ -98,17 +124,14 @@ async fn load_or_create_secret(db: &Pool) -> anyhow::Result<Vec<u8>> {
 
 /// All API routes, relative to a base path.
 fn api_routes(state: &AppState) -> Router<AppState> {
-    Router::new()
+    let mut router = Router::new()
         .route("/tests/ping", get(|| async { crate::util::ok_empty() }))
         .merge(crate::auth::routes())
-        .merge(crate::core::routes())
-        .nest(
-            "/pass/v1",
-            crate::pass::routes().layer(middleware::from_fn_with_state(
-                state.clone(),
-                crate::pass::security::guard,
-            )),
-        )
+        .merge(crate::core::routes());
+    for product in &state.products {
+        router = router.merge(product.routes(state));
+    }
+    router
 }
 
 pub fn build_router(state: AppState) -> Router {

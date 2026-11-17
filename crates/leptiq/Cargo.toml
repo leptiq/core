@@ -1,0 +1,37 @@
+[package]
+name = "leptiq"
+description = "Leptiq: a self-hostable server for the official Proton clients"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "passhost"
+path = "src/main.rs"
+
+[dependencies]
+leptiq-core.workspace = true
+leptiq-pass.workspace = true
+anyhow.workspace = true
+axum.workspace = true
+clap.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+base64.workspace = true
+hex.workspace = true
+proton-srp.workspace = true
+pgp.workspace = true
+rand.workspace = true
+reqwest.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tempfile.workspace = true
+aes-gcm.workspace = true
+totp-rs.workspace = true

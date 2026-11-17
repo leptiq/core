@@ -10,7 +10,7 @@ async fn totp_two_factor_login() {
     let name = unique("tfa");
     let c = Client::signup(&s, &name, "pw").await;
     let secret = totp_rs::Secret::generate_secret().to_encoded().to_string();
-    let totp = passhost::auth::twofa::totp_for(&secret).unwrap();
+    let totp = leptiq_core::auth::twofa::totp_for(&secret).unwrap();
 
     // Enabling 2FA needs the password scope.
     let denied = c.req("POST", "core/v4/settings/2fa/totp", Some(json!({ "TOTPSharedSecret": secret, "TOTPConfirmation": totp.generate_current().unwrap() }))).await;

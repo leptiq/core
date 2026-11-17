@@ -116,7 +116,7 @@ async fn alias_api_and_forwarding() {
         c.smtp.security = "none".into();
     })
     .await;
-    passhost::pass::alias::smtp::spawn(s.state.clone());
+    leptiq_pass::alias::smtp::spawn(s.state.clone());
     let c = Client::signup(&s, &unique("ali"), "pw").await;
     let v = c.create_vault("Aliases").await;
 

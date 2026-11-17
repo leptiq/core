@@ -1,4 +1,5 @@
-//! Proton Pass API (`pass/v1/...`).
+//! Leptiq Pass: the Proton Pass API (`pass/v1/...`), aliases and personal
+//! access tokens, as a [`Product`] on top of `leptiq-core`.
 
 pub mod alias;
 pub mod files;
@@ -16,14 +17,102 @@ pub mod sync;
 pub mod user;
 pub mod vaults;
 
+use std::sync::Arc;
+
 use axum::{
-    Router,
-    routing::{get, post, put},
+    Router, middleware,
+    routing::{delete, get, post, put},
 };
+use futures_util::future::BoxFuture;
+use leptiq_core::Product;
+
+// Core modules, re-exported so Pass code can keep writing `crate::app`,
+// `crate::auth`, ... for the shared platform.
+pub(crate) use leptiq_core::{app, auth, config, core, db, error, events, sql, util};
 
 use crate::app::AppState;
 
-pub fn routes() -> Router<AppState> {
+/// Pass database migrations (versions 1000+).
+static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
+
+/// Proton Pass as a Leptiq product.
+pub struct PassProduct;
+
+/// The Pass product, ready to register with the server.
+pub fn product() -> Arc<dyn Product> {
+    Arc::new(PassProduct)
+}
+
+impl Product for PassProduct {
+    fn name(&self) -> &'static str {
+        "pass"
+    }
+
+    fn migrator(&self) -> &'static sqlx::migrate::Migrator {
+        &MIGRATOR
+    }
+
+    fn init(&self, config: &config::Config, ext: &mut http::Extensions) -> anyhow::Result<()> {
+        ext.insert(files::BlobStore::new(&config.data_dir)?);
+        Ok(())
+    }
+
+    fn routes(&self, state: &AppState) -> Router<AppState> {
+        Router::new()
+            .nest(
+                "/pass/v1",
+                routes().layer(middleware::from_fn_with_state(
+                    state.clone(),
+                    security::guard,
+                )),
+            )
+            // Personal access tokens (used by the Pass CLI) live under the
+            // account API path.
+            .route(
+                "/account/v4/personal-access-token",
+                get(pat::list).post(pat::create),
+            )
+            .route(
+                "/account/v4/personal-access-token/session",
+                post(pat::session),
+            )
+            .route(
+                "/account/v4/personal-access-token/{id}",
+                delete(pat::delete),
+            )
+    }
+
+    fn spawn_background(&self, state: &AppState) {
+        let s = state.clone();
+        tokio::spawn(async move {
+            loop {
+                if let Err(e) = files::cleanup(&s).await {
+                    tracing::warn!("file cleanup failed: {e:?}");
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(3600)).await;
+            }
+        });
+        alias::smtp::spawn(state.clone());
+    }
+
+    fn on_address_created<'a>(
+        &'a self,
+        tx: &'a mut db::Tx<'_>,
+        email: &'a str,
+    ) -> BoxFuture<'a, error::ApiResult<()>> {
+        Box::pin(invites::on_address_created(tx, email))
+    }
+
+    fn on_user_deleted<'a>(
+        &'a self,
+        state: &'a AppState,
+        user_id: &'a str,
+    ) -> BoxFuture<'a, error::ApiResult<()>> {
+        Box::pin(shares::delete_all_for_user(state, user_id))
+    }
+}
+
+fn routes() -> Router<AppState> {
     Router::new()
         // user
         .route("/user/access", get(user::access).post(user::access))

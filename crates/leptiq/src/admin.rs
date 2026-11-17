@@ -2,8 +2,10 @@
 
 use clap::Subcommand;
 
-use super::AppState;
-use crate::util::{new_token, now};
+use leptiq_core::{
+    AppState,
+    util::{new_token, now},
+};
 
 #[derive(Subcommand)]
 pub enum AdminCommand {
@@ -52,11 +54,21 @@ pub async fn run(state: &AppState, cmd: AdminCommand) -> anyhow::Result<()> {
             anyhow::ensure!(res.rows_affected() == 1, "no such user");
         }
         AdminCommand::DeleteUser { username } => {
-            let res = sqlx::query("DELETE FROM users WHERE name = $1")
+            let row: Option<(String,)> = sqlx::query_as("SELECT id FROM users WHERE name = $1")
                 .bind(username.to_lowercase())
+                .fetch_optional(&state.db)
+                .await?;
+            let (user_id,) = row.ok_or_else(|| anyhow::anyhow!("no such user"))?;
+            for product in &state.products {
+                product
+                    .on_user_deleted(state, &user_id)
+                    .await
+                    .map_err(|e| anyhow::anyhow!("{e:?}"))?;
+            }
+            sqlx::query("DELETE FROM users WHERE id = $1")
+                .bind(&user_id)
                 .execute(&state.db)
                 .await?;
-            anyhow::ensure!(res.rows_affected() == 1, "no such user");
         }
         AdminCommand::Modulus => println!("{}", state.modulus.signed),
     }

@@ -1953,6 +1953,90 @@ dependencies = [
 ]
 
 [[package]]
+name = "leptiq"
+version = "0.1.0"
+dependencies = [
+ "aes-gcm",
+ "anyhow",
+ "axum",
+ "base64 0.22.1",
+ "clap",
+ "hex",
+ "leptiq-core",
+ "leptiq-pass",
+ "pgp",
+ "proton-srp",
+ "rand 0.8.8",
+ "reqwest",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "tempfile",
+ "tokio",
+ "totp-rs",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "leptiq-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "axum-extra",
+ "base64 0.22.1",
+ "figment",
+ "futures-util",
+ "hex",
+ "hmac 0.12.1",
+ "http",
+ "lettre",
+ "pgp",
+ "proton-srp",
+ "rand 0.8.8",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "thiserror 2.0.21",
+ "tokio",
+ "totp-rs",
+ "tower",
+ "tower-http 0.7.1",
+ "tracing",
+ "url",
+ "webauthn-rs",
+ "zeroize",
+]
+
+[[package]]
+name = "leptiq-pass"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "base64 0.22.1",
+ "futures-util",
+ "hex",
+ "hickory-resolver",
+ "hmac 0.12.1",
+ "http",
+ "leptiq-core",
+ "lettre",
+ "pgp",
+ "proton-srp",
+ "rand 0.8.8",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "lettre"
 version = "0.11.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2418,42 +2502,6 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "windows-link",
-]
-
-[[package]]
-name = "passhost"
-version = "0.1.0"
-dependencies = [
- "aes-gcm",
- "anyhow",
- "axum",
- "axum-extra",
- "base64 0.22.1",
- "clap",
- "figment",
- "hex",
- "hickory-resolver",
- "hmac 0.12.1",
- "lettre",
- "pgp",
- "proton-srp",
- "rand 0.8.8",
- "reqwest",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "sqlx",
- "tempfile",
- "thiserror 2.0.21",
- "tokio",
- "totp-rs",
- "tower",
- "tower-http 0.7.1",
- "tracing",
- "tracing-subscriber",
- "url",
- "webauthn-rs",
- "zeroize",
 ]
 
 [[package]]

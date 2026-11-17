@@ -10,7 +10,7 @@ use pgp::crypto::ecc_curve::ECCCurve;
 use proton_srp::{RPGPVerifier, SRPAuth, SrpHashVersion};
 use serde_json::{Value, json};
 
-use passhost::{AppState, config::Config, db};
+use leptiq::{AppState, Config};
 
 pub struct TestServer {
     pub base: String,
@@ -34,9 +34,8 @@ pub async fn server_with(f: impl FnOnce(&mut Config)) -> TestServer {
     config.data_dir = dir.path().join("data").display().to_string();
     config.mail_domain = "example.test".into();
     f(&mut config);
-    let pool = db::connect(&config.database_url).await.unwrap();
-    let state = AppState::new(config, pool).await.unwrap();
-    let router = passhost::build_router(state.clone());
+    let state = leptiq::build_state(config).await.unwrap();
+    let router = leptiq::build_router(state.clone());
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move { axum::serve(listener, router).await.unwrap() });
@@ -48,7 +47,7 @@ pub async fn server_with(f: impl FnOnce(&mut Config)) -> TestServer {
 }
 
 pub fn unique(prefix: &str) -> String {
-    format!("{prefix}{}", passhost::util::new_token(8))
+    format!("{prefix}{}", leptiq_core::util::new_token(8))
 }
 
 #[derive(Clone)]
@@ -277,7 +276,7 @@ pub fn aes_encrypt(key: &[u8; 32], plaintext: &[u8], ad: &str) -> String {
         aead::{Aead, KeyInit, Payload},
     };
     let cipher = Aes256Gcm::new(key.into());
-    let iv = passhost::util::random_bytes(12);
+    let iv = leptiq_core::util::random_bytes(12);
     let ct = cipher
         .encrypt(
             Nonce::from_slice(&iv),
@@ -317,7 +316,7 @@ pub struct Vault {
 
 impl Client {
     pub async fn create_vault(&self, name: &str) -> Vault {
-        let key: [u8; 32] = passhost::util::random_bytes(32).try_into().unwrap();
+        let key: [u8; 32] = leptiq_core::util::random_bytes(32).try_into().unwrap();
         let content = aes_encrypt(&key, name.as_bytes(), "vaultcontent");
         // Real clients PGP-encrypt the vault key to their address key; the
         // server treats it as opaque, so base64 is enough here.
@@ -337,7 +336,7 @@ impl Client {
 
     /// Creates an item; returns (item id, item key).
     pub async fn create_item(&self, vault: &Vault, plaintext: &str) -> (String, [u8; 32], Value) {
-        let item_key: [u8; 32] = passhost::util::random_bytes(32).try_into().unwrap();
+        let item_key: [u8; 32] = leptiq_core::util::random_bytes(32).try_into().unwrap();
         let r = self
             .post(
                 &format!("pass/v1/share/{}/item", vault.share_id),

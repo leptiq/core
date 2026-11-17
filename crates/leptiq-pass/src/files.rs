@@ -31,6 +31,7 @@ use crate::{
 pub const MAX_CHUNK: usize = 16 * 1024 * 1024;
 pub const MAX_CHUNKS: i64 = 10_000;
 
+#[derive(Clone)]
 pub struct BlobStore {
     root: PathBuf,
 }
@@ -197,7 +198,7 @@ pub async fn upload_chunk(
     }
     let chunk_id = new_id();
     state
-        .blobs
+        .ext::<BlobStore>()
         .put(&chunk_id, &data)
         .await
         .map_err(ApiError::internal)?;
@@ -241,7 +242,7 @@ pub async fn upload_chunk(
     adjust_usage(&mut tx, &user.user_id, size).await?;
     tx.commit().await?;
     if let Some((old_chunk, _)) = old {
-        state.blobs.delete(&old_chunk).await;
+        state.ext::<BlobStore>().delete(&old_chunk).await;
     }
     Ok(ok(json!({})))
 }
@@ -511,7 +512,7 @@ pub async fn download_chunk(
     drop(conn);
     let (chunk,) = row.ok_or_else(|| ApiError::not_found("Chunk"))?;
     let data = state
-        .blobs
+        .ext::<BlobStore>()
         .get(&chunk)
         .await
         .map_err(|_| ApiError::not_found("Chunk"))?;
@@ -740,7 +741,7 @@ pub async fn public_chunk(
     .await?;
     let (chunk,) = row.ok_or_else(|| ApiError::not_found("Chunk"))?;
     let data = state
-        .blobs
+        .ext::<BlobStore>()
         .get(&chunk)
         .await
         .map_err(|_| ApiError::not_found("Chunk"))?;
@@ -774,7 +775,7 @@ pub async fn cleanup(state: &AppState) -> anyhow::Result<()> {
             .await?;
         tx.commit().await?;
         for (c,) in chunks {
-            state.blobs.delete(&c).await;
+            state.ext::<BlobStore>().delete(&c).await;
         }
     }
     Ok(())

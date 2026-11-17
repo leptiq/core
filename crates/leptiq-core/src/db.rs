@@ -27,8 +27,34 @@ pub async fn connect(url: &str) -> anyhow::Result<Pool> {
         })
         .connect(url)
         .await?;
-    sqlx::migrate!("./migrations").run(&pool).await?;
     Ok(pool)
+}
+
+/// Core's own migrations (accounts, sessions, keys, events...).
+pub static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
+
+/// Runs core's migrations, then each product's, in order. All migrators share
+/// one `_sqlx_migrations` table with disjoint version ranges, so each one
+/// ignores the others' rows.
+pub async fn migrate(
+    pool: &Pool,
+    products: &[std::sync::Arc<dyn crate::Product>],
+) -> anyhow::Result<()> {
+    run_migrator(pool, &MIGRATOR).await?;
+    for product in products {
+        run_migrator(pool, product.migrator()).await?;
+    }
+    Ok(())
+}
+
+async fn run_migrator(pool: &Pool, migrator: &sqlx::migrate::Migrator) -> anyhow::Result<()> {
+    let mut m = sqlx::migrate::Migrator {
+        migrations: migrator.migrations.clone(),
+        ..sqlx::migrate::Migrator::DEFAULT
+    };
+    m.set_ignore_missing(true);
+    m.run(pool).await?;
+    Ok(())
 }
 
 /// `format!` for SQL built only from compile-time column lists (never user input).
