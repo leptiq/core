@@ -40,7 +40,16 @@ account.example.com {
     }
     handle {
         root * /srv/proton-account
-        try_files {path} /index.html
+        # Same routing as the app's .htaccess: the signed-in pages (/u/<n>/...)
+        # are a separate page, private.html. Serving index.html there makes the
+        # sign-in page redirect back to /u/<n>/... forever.
+        @html path / *.html /u/* /switch* /login* /signup*
+        header @html Cache-Control "no-cache, no-store, must-revalidate"
+        @private path /u/*
+        rewrite @private /private.html
+        @oauth path /oauth/callback*
+        rewrite @oauth /oauth.html
+        try_files {path} {path}/index.html /index.html
         file_server
     }
 }
@@ -49,6 +58,12 @@ account-api.example.com, api.example.com {
     reverse_proxy 127.0.0.1:8080
 }
 ```
+
+The account app ships an Apache `.htaccess` with its routing rules; the Caddy
+block above mirrors the parts that matter. Its signed-in pages (account
+settings, `/u/<n>/...`) call Proton account endpoints passhost does not
+implement (mail, calendar, payments...), so they show an error; sign-in,
+signup and the account switcher work.
 
 Set `public_url = "https://pass.example.com"`. Cookies use the `Secure` flag when
 `public_url` is https. Set `webauthn_rp_id = "example.com"` so security keys work
