@@ -310,3 +310,39 @@ an authenticator key.
 | PUT, DELETE | `/authenticator/v1/entry/{id}` (PUT needs `LastRevision`; stale → 409) |
 | PUT | `/authenticator/v1/entry/{id}/order` (`AfterID`, null = top) |
 | PUT | `/authenticator/v1/entry/order` (`StartingPosition`, `Entries`) |
+
+## Drive API (`leptiq-drive`)
+
+The API of Proton's Drive SDK, used by the Drive web app. Names, keys, extended
+attributes and file blocks are client ciphertext; the server checks name-hash
+uniqueness per folder (2500 with `ConflictLinkID`), tracks revisions, sizes and
+quota, and stores each block's SHA-256 for the client to verify.
+
+| Methods | Path |
+|---|---|
+| GET, POST | `/drive/volumes`; GET `/drive/volumes/{volume}` |
+| POST | `/drive/photos/volumes` |
+| GET | `/drive/v2/shares/my-files`, `/drive/v2/shares/photos` (2501 until created) |
+| GET | `/drive/shares`, `/drive/shares/{share}`, `/drive/shares/{share}/links/{link}` |
+| GET | `/drive/v2/volumes/{volume}/folders/{link}/children` (`AnchorID` paging) |
+| POST | `/drive/v2/volumes/{volume}/links`, `/drive/photos/volumes/{volume}/links` |
+| POST | `/drive/v2/volumes/{volume}/folders` |
+| PUT | `/drive/v2/volumes/{volume}/links/{link}/rename`, `.../move` |
+| POST | `/drive/v2/volumes/{volume}/trash_multiple`, `.../trash/delete_multiple`, `.../delete_multiple` |
+| PUT | `/drive/v2/volumes/{volume}/trash/restore_multiple` |
+| GET, DELETE | `/drive/volumes/{volume}/trash` (GET pages with `Page` until empty) |
+| POST | `/drive/v2/volumes/{volume}/links/{link}/checkAvailableHashes` |
+| GET | `/drive/volumes/{volume}/folders/{link}/calculate-descendents-size` |
+| POST | `/drive/v2/volumes/{volume}/files` (draft file + revision) |
+| GET, POST | `/drive/v2/volumes/{volume}/files/{link}/revisions` |
+| GET, PUT, DELETE | `/drive/v2/volumes/{volume}/files/{link}/revisions/{revision}` (PUT commits; GET pages blocks with `FromBlockIndex`) |
+| POST | `/drive/v2/volumes/{volume}/files/{link}/revisions/{revision}/restore` |
+| GET | `/drive/v2/volumes/{volume}/links/{link}/revisions/{revision}/verification` |
+| POST | `/drive/blocks` (upload URLs), `/drive/volumes/{volume}/thumbnails` (download URLs) |
+| GET, POST | `/drive/storage/{token}` (block bytes; multipart field `Block`; no app version needed) |
+| GET | `/drive/volumes/{volume}/events/latest`, `/drive/v2/volumes/{volume}/events/{event}` |
+| GET, PUT | `/drive/me/settings` |
+
+Sharing, devices, photo and album lists, invitations and onboarding answer empty.
+Block URLs are relative (`[drive] storage_url`, default `/api/drive/storage`), so
+the Drive web app must be served with `/api` proxied to the server.

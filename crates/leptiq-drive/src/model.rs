@@ -416,3 +416,65 @@ pub async fn event(state: &AppState, volume_id: &str, event_type: i64, l: &Link)
     )
     .await
 }
+
+/// The legacy (share-based) `LinkMeta` shape, still used by parts of the web
+/// app (`drive/shares/{share}/links/{link}`).
+pub async fn legacy_link(state: &AppState, vol: &Volume, l: &Link) -> ApiResult<Value> {
+    let (file_props, folder_props, size) = if l.link_type == FOLDER {
+        (Value::Null, json!({ "NodeHashKey": l.node_hash_key }), 0)
+    } else {
+        let active = match &l.active_revision_id {
+            Some(rid) => Some(revision(state, &l.id, rid).await?),
+            None => None,
+        };
+        let size = active.as_ref().map(|r| r.size).unwrap_or(0);
+        let active_json = match &active {
+            Some(r) => revision_json(state, r, true).await?,
+            None => Value::Null,
+        };
+        (
+            json!({
+                "ContentKeyPacket": l.content_key_packet,
+                "ContentKeyPacketSignature": l.content_key_packet_signature,
+                "ActiveRevision": active_json,
+            }),
+            Value::Null,
+            size,
+        )
+    };
+    let is_root = l.parent_id.is_none() && l.id == vol.root_link_id;
+    Ok(json!({
+        "LinkID": l.id,
+        "ParentLinkID": l.parent_id,
+        "VolumeID": vol.id,
+        "Type": l.link_type,
+        "Name": l.name,
+        "EncryptedName": l.name,
+        "NameSignatureEmail": l.name_signature_email,
+        "Hash": l.name_hash,
+        "Size": size,
+        "MIMEType": l.mime_type.clone().unwrap_or_else(|| "Folder".into()),
+        "CreateTime": l.created,
+        "ModifyTime": l.modified,
+        "RealModifyTime": l.modified,
+        "Trashed": l.trash_time,
+        "State": l.state,
+        "NodeKey": l.node_key,
+        "NodePassphrase": l.node_passphrase,
+        "NodePassphraseSignature": l.node_passphrase_signature,
+        "SignatureEmail": l.signature_email,
+        "SignatureAddress": l.signature_email,
+        "Attributes": 0,
+        "Permissions": 7,
+        "FileProperties": file_props,
+        "FolderProperties": folder_props,
+        "AlbumProperties": null,
+        "PhotoProperties": null,
+        "DocumentProperties": null,
+        "Shared": 0,
+        "ShareIDs": if is_root { vec![vol.share_id.clone()] } else { vec![] },
+        "ShareUrls": [],
+        "SharingDetails": if is_root { json!({ "ShareID": vol.share_id, "ShareUrl": null }) } else { Value::Null },
+        "XAttr": l.xattr,
+    }))
+}

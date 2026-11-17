@@ -8,6 +8,7 @@ The official web clients expect these hosts:
 |---|---|
 | `pass.example.com` | Pass web app (static files, `applications/pass/dist`) and `/api` → leptiq |
 | `account.example.com` | Account app (static files, login/signup) and `/api` → leptiq |
+| `drive.example.com` | Drive web app (static files, `applications/drive/dist`) and `/api` → leptiq |
 | `account-api.example.com` | → leptiq (the account app's anti-abuse challenge frame, `/challenge/v4/html`) |
 | `api.example.com` | API root for the Android app (`PROD_ENV_URL=example.com`) |
 

@@ -78,7 +78,12 @@ impl Product for DriveProduct {
             .route("/drive/photos/volumes", post(volumes::create_photos))
             .route("/drive/v2/shares/my-files", get(volumes::my_files))
             .route("/drive/v2/shares/photos", get(volumes::photos))
+            .route("/drive/shares", get(volumes::list_shares))
             .route("/drive/shares/{share}", get(volumes::get_share))
+            .route(
+                "/drive/shares/{share}/links/{link}",
+                get(volumes::share_link),
+            )
             // Nodes.
             .route(
                 "/drive/v2/volumes/{volume}/folders/{link}/children",

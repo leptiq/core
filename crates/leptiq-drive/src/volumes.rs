@@ -312,3 +312,33 @@ pub async fn get_share(
     let v = model::volume(&state, &user.user_id, &s.volume_id).await?;
     Ok(ok(share_json(&v, &s)))
 }
+
+/// `GET drive/shares`: the user's shares (legacy listing).
+pub async fn list_shares(State(state): State<AppState>, user: AuthUser) -> ApiResult<Json<Value>> {
+    let mut shares = Vec::new();
+    for ty in [model::VOLUME_REGULAR, model::VOLUME_PHOTOS] {
+        if let Some(v) = model::user_volume(&state, &user.user_id, ty).await? {
+            let s = model::share(&state, &v.share_id).await?;
+            shares.push(json!({
+                "ShareID": s.id, "VolumeID": s.volume_id, "Type": s.share_type, "LinkID": s.link_id,
+                "LinkType": 1, "AddressID": s.address_id, "Creator": s.creator_email, "Locked": false,
+                "State": 1, "CreateTime": s.created, "PossibleKeyPackets": [],
+            }));
+        }
+    }
+    Ok(ok(json!({ "Shares": shares })))
+}
+
+/// `GET drive/shares/{share}/links/{link}`: one link in the legacy shape.
+pub async fn share_link(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path((share_id, link_id)): Path<(String, String)>,
+) -> ApiResult<Json<Value>> {
+    let s = model::share(&state, &share_id).await?;
+    let v = model::volume(&state, &user.user_id, &s.volume_id).await?;
+    let l = model::link(&state, &v.id, &link_id).await?;
+    Ok(ok(
+        json!({ "Link": model::legacy_link(&state, &v, &l).await? }),
+    ))
+}
