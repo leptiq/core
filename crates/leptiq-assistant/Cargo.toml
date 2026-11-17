@@ -1,0 +1,23 @@
+[package]
+name = "leptiq-assistant"
+description = "Leptiq Assistant: a server for the official Lumo (AI assistant) clients, backed by any OpenAI-compatible model API"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+leptiq-core.workspace = true
+aes-gcm.workspace = true
+anyhow.workspace = true
+axum.workspace = true
+base64.workspace = true
+futures-util = { workspace = true, features = ["std"] }
+http.workspace = true
+pgp.workspace = true
+rand.workspace = true
+reqwest = { workspace = true, features = ["stream"] }
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+tracing.workspace = true

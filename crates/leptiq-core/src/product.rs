@@ -31,6 +31,11 @@ pub trait Product: Send + Sync + 'static {
         false
     }
 
+    /// Frontend feature flags (Unleash toggles) to report as enabled.
+    fn feature_flags(&self) -> Vec<&'static str> {
+        vec![]
+    }
+
     /// Starts background jobs (cleanups, listeners...).
     fn spawn_background(&self, _state: &AppState) {}
 

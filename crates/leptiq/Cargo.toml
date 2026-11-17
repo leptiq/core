@@ -17,6 +17,7 @@ leptiq-core.workspace = true
 leptiq-pass.workspace = true
 leptiq-authenticator.workspace = true
 leptiq-drive.workspace = true
+leptiq-assistant.workspace = true
 anyhow.workspace = true
 axum.workspace = true
 clap.workspace = true

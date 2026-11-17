@@ -13,6 +13,7 @@ pub fn products() -> Vec<Arc<dyn Product>> {
         leptiq_pass::product(),
         leptiq_authenticator::product(),
         leptiq_drive::product(),
+        leptiq_assistant::product(),
     ]
 }
 

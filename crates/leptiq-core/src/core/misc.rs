@@ -56,9 +56,23 @@ async fn empty() -> Json<Value> {
     ok_empty()
 }
 
-async fn feature_flags() -> Json<Value> {
-    // Unleash-style frontend toggles. Empty means clients use their defaults.
-    ok(json!({ "toggles": [] }))
+/// Unleash-style frontend toggles: the flags products enable; anything not
+/// listed is off and clients use their defaults.
+async fn feature_flags(State(state): State<AppState>) -> Json<Value> {
+    let toggles: Vec<Value> = state
+        .products
+        .iter()
+        .flat_map(|p| p.feature_flags())
+        .map(|name| {
+            json!({
+                "name": name,
+                "enabled": true,
+                "impressionData": false,
+                "variant": { "name": "disabled", "enabled": false },
+            })
+        })
+        .collect();
+    ok(json!({ "toggles": toggles }))
 }
 
 async fn features() -> Json<Value> {
