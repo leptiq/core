@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/leptiq-core", "crates/leptiq-pass", "crates/leptiq"]
+members = ["crates/leptiq-core", "crates/leptiq-pass", "crates/leptiq-authenticator", "crates/leptiq"]
 
 [workspace.package]
 edition = "2024"
@@ -10,6 +10,7 @@ version = "0.1.0"
 [workspace.dependencies]
 leptiq-core = { path = "crates/leptiq-core" }
 leptiq-pass = { path = "crates/leptiq-pass" }
+leptiq-authenticator = { path = "crates/leptiq-authenticator" }
 anyhow = "1"
 axum = { version = "0.8", features = ["macros", "multipart"] }
 axum-extra = { version = "0.12", features = ["cookie"] }

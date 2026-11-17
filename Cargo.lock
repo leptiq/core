@@ -1962,6 +1962,7 @@ dependencies = [
  "base64 0.22.1",
  "clap",
  "hex",
+ "leptiq-authenticator",
  "leptiq-core",
  "leptiq-pass",
  "pgp",
@@ -1976,6 +1977,18 @@ dependencies = [
  "totp-rs",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "leptiq-authenticator"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "leptiq-core",
+ "serde",
+ "serde_json",
+ "sqlx",
 ]
 
 [[package]]

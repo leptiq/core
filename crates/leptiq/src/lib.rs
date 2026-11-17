@@ -9,7 +9,7 @@ pub use leptiq_core::{AppState, Config, Product, build_router};
 
 /// The products this server runs.
 pub fn products() -> Vec<Arc<dyn Product>> {
-    vec![leptiq_pass::product()]
+    vec![leptiq_pass::product(), leptiq_authenticator::product()]
 }
 
 /// Connects to the database, applies core and product migrations, and builds

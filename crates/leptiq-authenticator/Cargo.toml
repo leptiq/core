@@ -1,0 +1,14 @@
+[package]
+name = "leptiq-authenticator"
+description = "Leptiq Authenticator: sync server for the official Proton Authenticator apps"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+leptiq-core.workspace = true
+anyhow.workspace = true
+axum.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true

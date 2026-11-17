@@ -16,6 +16,7 @@ project, not affiliated with or endorsed by Proton AG.
 |---|---|
 | `leptiq-core` | Accounts, authentication, sessions, keys, events, config, storage, and the `Product` trait products plug into |
 | `leptiq-pass` | Leptiq Pass: the Pass API, aliases, personal access tokens |
+| `leptiq-authenticator` | Leptiq Authenticator: sync for the Proton Authenticator apps (encrypted 2FA entries) |
 | `leptiq` | The `leptiq` server binary and admin commands; end-to-end tests |
 
 The server is **zero-knowledge**, like Proton's. Clients encrypt everything before

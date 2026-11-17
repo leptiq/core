@@ -296,3 +296,17 @@ sign-in history).
 | GET, PUT | `/pass/v1/share/{share}/folder/{folder}` |
 | PUT | `/pass/v1/share/{share}/folder/{folder}/move` |
 
+## Authenticator API (`leptiq-authenticator`)
+
+Sync for the Proton Authenticator apps. The server stores only ciphertext:
+authenticator keys are encrypted by the client with a user key, entries with
+an authenticator key.
+
+| Methods | Path |
+|---|---|
+| GET, POST | `/authenticator/v1/key` |
+| GET, POST | `/authenticator/v1/entry` (GET pages 100 at a time: `Since` = previous `LastID`) |
+| POST, PUT, DELETE | `/authenticator/v1/entry/bulk` |
+| PUT, DELETE | `/authenticator/v1/entry/{id}` (PUT needs `LastRevision`; stale → 409) |
+| PUT | `/authenticator/v1/entry/{id}/order` (`AfterID`, null = top) |
+| PUT | `/authenticator/v1/entry/order` (`StartingPosition`, `Entries`) |
