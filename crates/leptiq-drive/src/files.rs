@@ -500,13 +500,14 @@ pub async fn commit_revision(
     if rev.state != REV_DRAFT {
         return Err(ApiError::bad_request("Revision is not a draft"));
     }
-    let (blocks,): (i64,) =
-        sqlx::query_as("SELECT COALESCE(SUM(size), 0) FROM drive_blocks WHERE revision_id = $1")
-            .bind(&rev.id)
-            .fetch_one(&state.db)
-            .await?;
+    let (blocks,): (i64,) = sqlx::query_as(
+        "SELECT CAST(COALESCE(SUM(size), 0) AS BIGINT) FROM drive_blocks WHERE revision_id = $1",
+    )
+    .bind(&rev.id)
+    .fetch_one(&state.db)
+    .await?;
     let (thumbs,): (i64,) = sqlx::query_as(
-        "SELECT COALESCE(SUM(size), 0) FROM drive_thumbnails WHERE revision_id = $1",
+        "SELECT CAST(COALESCE(SUM(size), 0) AS BIGINT) FROM drive_thumbnails WHERE revision_id = $1",
     )
     .bind(&rev.id)
     .fetch_one(&state.db)
