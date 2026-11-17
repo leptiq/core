@@ -104,7 +104,7 @@ Without a relay, verification codes are written to the log.
 ## Aliases
 
 ```toml
-[alias]
+[pass.alias]
 enabled = true
 domains = ["alias.example.com"]
 smtp_listen = "127.0.0.1:2525"

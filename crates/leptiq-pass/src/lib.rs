@@ -32,6 +32,29 @@ pub(crate) use leptiq_core::{app, auth, config, core, db, error, events, sql, ut
 
 use crate::app::AppState;
 
+/// The `[pass]` config section.
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct PassConfig {
+    /// `[pass.alias]`: email aliases (SimpleLogin-style).
+    pub alias: AliasConfig,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct AliasConfig {
+    pub enabled: bool,
+    /// Domains aliases can be created on.
+    pub domains: Vec<String>,
+    /// Address the inbound SMTP server listens on (e.g. "0.0.0.0:25"). Empty disables it.
+    pub smtp_listen: String,
+    /// Host name of this server's MX, checked when verifying custom domains
+    /// (empty: any MX record is accepted).
+    pub mx_host: String,
+    /// Maximum aliases per user (0 = unlimited).
+    pub max_aliases: i64,
+}
+
 /// Pass database migrations (versions 1000+).
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
 
@@ -53,6 +76,7 @@ impl Product for PassProduct {
     }
 
     fn init(&self, config: &config::Config, ext: &mut http::Extensions) -> anyhow::Result<()> {
+        ext.insert(config.section::<PassConfig>("pass")?);
         ext.insert(files::BlobStore::new(&config.data_dir)?);
         Ok(())
     }

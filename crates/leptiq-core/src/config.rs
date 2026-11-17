@@ -2,7 +2,8 @@ use figment::{
     Figment,
     providers::{Env, Format, Serialized, Toml},
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde_json::{Map, Value};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -44,26 +45,16 @@ pub struct Config {
     pub secret_key: String,
     /// Allowed CORS origins ("*" for any).
     pub cors_origins: Vec<String>,
-    /// Per-user storage quota for attachments, in bytes.
-    pub file_quota_bytes: i64,
-    pub alias: AliasConfig,
+    /// Per-user storage quota (attachments, files...), in bytes.
+    pub storage_quota_bytes: i64,
+    /// Outbound mail relay, shared by all products.
     pub smtp: SmtpConfig,
     /// WebAuthn relying party id (usually the parent domain of account/pass apps).
     pub webauthn_rp_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AliasConfig {
-    pub enabled: bool,
-    /// Domains aliases can be created on.
-    pub domains: Vec<String>,
-    /// Address the inbound SMTP server listens on (e.g. "0.0.0.0:25"). Empty disables it.
-    pub smtp_listen: String,
-    /// Host name of this server's MX, checked when verifying custom domains
-    /// (empty: any MX record is accepted).
-    pub mx_host: String,
-    /// Maximum aliases per user (0 = unlimited).
-    pub max_aliases: i64,
+    /// Product sections (`[pass]`, ...), read by each product with
+    /// [`Config::section`].
+    #[serde(flatten)]
+    pub sections: Map<String, Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,14 +85,7 @@ impl Default for Config {
             refresh_token_ttl: 180 * 24 * 3600,
             secret_key: String::new(),
             cors_origins: vec!["*".into()],
-            file_quota_bytes: 10 * 1024 * 1024 * 1024,
-            alias: AliasConfig {
-                enabled: false,
-                domains: vec![],
-                smtp_listen: String::new(),
-                mx_host: String::new(),
-                max_aliases: 0,
-            },
+            storage_quota_bytes: 10 * 1024 * 1024 * 1024,
             smtp: SmtpConfig {
                 host: String::new(),
                 port: 587,
@@ -111,11 +95,29 @@ impl Default for Config {
                 security: "starttls".into(),
             },
             webauthn_rp_id: "localhost".into(),
+            sections: Map::new(),
         }
     }
 }
 
 impl Config {
+    /// A product's own config section (e.g. `[pass]`); missing keys take the
+    /// section type's defaults.
+    pub fn section<T: DeserializeOwned>(&self, name: &str) -> anyhow::Result<T> {
+        let value = self
+            .sections
+            .get(name)
+            .cloned()
+            .unwrap_or(Value::Object(Map::new()));
+        serde_json::from_value(value).map_err(|e| anyhow::anyhow!("invalid [{name}] config: {e}"))
+    }
+
+    /// Replaces a product's config section (mostly for tests).
+    pub fn set_section(&mut self, name: &str, value: impl Serialize) {
+        let value = serde_json::to_value(value).expect("serializable config section");
+        self.sections.insert(name.to_string(), value);
+    }
+
     pub fn load(path: &str) -> anyhow::Result<Self> {
         let config: Config = Figment::from(Serialized::defaults(Config::default()))
             .merge(Toml::file(path))

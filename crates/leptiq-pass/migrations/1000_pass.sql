@@ -1,3 +1,6 @@
+-- Leptiq Pass: vaults, shares, items, folders, invites and files.
+-- Pass migrations use versions 1000+ (core uses 1-999).
+
 -- Proton Pass core: vaults, shares, keys, items, folders.
 
 CREATE TABLE vaults (
@@ -26,7 +29,9 @@ CREATE TABLE shares (
     deleted BIGINT NOT NULL DEFAULT 0,
     created BIGINT NOT NULL
 );
+
 CREATE INDEX shares_user ON shares(user_id);
+
 CREATE INDEX shares_vault ON shares(vault_id);
 
 CREATE TABLE share_keys (
@@ -49,6 +54,7 @@ CREATE TABLE folders (
     created BIGINT NOT NULL,
     modified BIGINT NOT NULL
 );
+
 CREATE INDEX folders_vault ON folders(vault_id);
 
 CREATE TABLE items (
@@ -67,7 +73,9 @@ CREATE TABLE items (
     revision_time BIGINT NOT NULL,
     last_use_time BIGINT NOT NULL DEFAULT 0
 );
+
 CREATE INDEX items_vault ON items(vault_id);
+
 CREATE INDEX items_alias ON items(alias_email);
 
 CREATE TABLE item_keys (
@@ -132,7 +140,9 @@ CREATE TABLE invites (
     created BIGINT NOT NULL,
     modified BIGINT NOT NULL
 );
+
 CREATE INDEX invites_invitee ON invites(invitee_email);
+
 CREATE INDEX invites_vault ON invites(vault_id);
 
 CREATE TABLE new_user_invites (
@@ -151,6 +161,7 @@ CREATE TABLE new_user_invites (
     created BIGINT NOT NULL,
     modified BIGINT NOT NULL
 );
+
 CREATE INDEX new_user_invites_email ON new_user_invites(invitee_email);
 
 -- Attachments.

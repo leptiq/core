@@ -75,7 +75,7 @@ pub async fn create(
         return Err(ApiError::bad_request("Invalid domain"));
     }
     if state
-        .config
+        .ext::<crate::PassConfig>()
         .alias
         .domains
         .iter()
@@ -175,7 +175,11 @@ pub async fn verify(
             .collect(),
         Err(_) => vec![],
     };
-    let expected = state.config.alias.mx_host.to_lowercase();
+    let expected = state
+        .ext::<crate::PassConfig>()
+        .alias
+        .mx_host
+        .to_lowercase();
     let mx = !mx_hosts.is_empty() && (expected.is_empty() || mx_hosts.contains(&expected));
     // Forwarded mail is not DKIM-signed by passhost, so DKIM is not required.
     let dkim = true;

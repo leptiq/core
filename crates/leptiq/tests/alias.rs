@@ -108,9 +108,14 @@ async fn alias_api_and_forwarding() {
     let (sink_port, sink) = smtp_sink().await;
     let smtp_port = free_port();
     let s = server_with(|c| {
-        c.alias.enabled = true;
-        c.alias.domains = vec!["alias.test".into()];
-        c.alias.smtp_listen = format!("127.0.0.1:{smtp_port}");
+        c.set_section(
+            "pass",
+            serde_json::json!({ "alias": {
+                "enabled": true,
+                "domains": ["alias.test"],
+                "smtp_listen": format!("127.0.0.1:{smtp_port}"),
+            } }),
+        );
         c.smtp.host = "127.0.0.1".into();
         c.smtp.port = sink_port;
         c.smtp.security = "none".into();

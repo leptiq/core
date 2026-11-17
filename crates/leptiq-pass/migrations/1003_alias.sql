@@ -1,3 +1,5 @@
+-- Leptiq Pass: aliases (SimpleLogin-style), mailboxes and custom domains.
+
 -- Email aliases (SimpleLogin-style forwarding).
 
 CREATE TABLE alias_mailboxes (
@@ -10,6 +12,7 @@ CREATE TABLE alias_mailboxes (
     is_default BIGINT NOT NULL DEFAULT 0,
     created BIGINT NOT NULL
 );
+
 CREATE INDEX alias_mailboxes_user ON alias_mailboxes(user_id);
 
 CREATE TABLE aliases (
@@ -24,7 +27,9 @@ CREATE TABLE aliases (
     blocked BIGINT NOT NULL DEFAULT 0,
     created BIGINT NOT NULL
 );
+
 CREATE INDEX aliases_user ON aliases(user_id);
+
 CREATE INDEX aliases_item ON aliases(item_id);
 
 CREATE TABLE alias_mailbox_links (
@@ -45,6 +50,7 @@ CREATE TABLE alias_contacts (
     blocked_count BIGINT NOT NULL DEFAULT 0,
     created BIGINT NOT NULL
 );
+
 CREATE INDEX alias_contacts_alias ON alias_contacts(alias_email);
 
 CREATE TABLE alias_settings (

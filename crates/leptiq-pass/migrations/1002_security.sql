@@ -1,3 +1,5 @@
+-- Leptiq Pass: session PIN lock and the Pass extra password.
+
 -- Pass session PIN lock (per session).
 CREATE TABLE session_locks (
     uid TEXT PRIMARY KEY REFERENCES sessions(uid) ON DELETE CASCADE,
@@ -23,25 +25,4 @@ CREATE TABLE pass_srp (
 CREATE TABLE pass_unlocked_sessions (
     uid TEXT PRIMARY KEY REFERENCES sessions(uid) ON DELETE CASCADE,
     unlocked BIGINT NOT NULL
-);
-
--- FIDO2 / WebAuthn security keys.
-CREATE TABLE fido2_keys (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    credential_id TEXT NOT NULL,          -- base64url
-    passkey TEXT NOT NULL,                -- serialized webauthn-rs Passkey
-    attestation_format TEXT NOT NULL,
-    created BIGINT NOT NULL
-);
-CREATE INDEX fido2_keys_user ON fido2_keys(user_id);
-
--- In-flight WebAuthn ceremonies (registration and authentication).
-CREATE TABLE webauthn_states (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    kind TEXT NOT NULL,
-    state TEXT NOT NULL,
-    created BIGINT NOT NULL
 );

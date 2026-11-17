@@ -1,3 +1,5 @@
+-- Leptiq Pass: pending share keys and public links.
+
 -- Keys rotated by another member, encrypted to this member's address key,
 -- waiting to be re-encrypted ("promoted") to their user key.
 CREATE TABLE pending_share_keys (
@@ -9,6 +11,7 @@ CREATE TABLE pending_share_keys (
     encrypted_key TEXT NOT NULL,
     created BIGINT NOT NULL
 );
+
 CREATE INDEX pending_share_keys_share ON pending_share_keys(share_id);
 
 -- Public (secure) links to a single item.
@@ -29,4 +32,5 @@ CREATE TABLE public_links (
     expiration_time BIGINT NOT NULL,
     created BIGINT NOT NULL
 );
+
 CREATE INDEX public_links_user ON public_links(user_id);

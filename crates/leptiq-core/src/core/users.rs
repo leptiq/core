@@ -43,7 +43,7 @@ pub async fn user_json(state: &AppState, user_id: &str) -> ApiResult<Value> {
                     "Flags": flags, "Fingerprint": fp, "RecoverySecret": null, "RecoverySecretSignature": null })
         })
         .collect();
-    let quota = state.config.file_quota_bytes;
+    let quota = state.config.storage_quota_bytes;
     Ok(json!({
         "ID": id,
         "Name": name,

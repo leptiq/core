@@ -1,3 +1,0 @@
--- Proton's per-browser account index (`LocalID`): web clients address the
--- signed-in accounts of one browser as /u/0, /u/1, ...
-ALTER TABLE sessions ADD COLUMN local_id BIGINT NOT NULL DEFAULT 0;

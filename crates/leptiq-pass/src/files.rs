@@ -189,7 +189,7 @@ pub async fn upload_chunk(
         .bind(&user.user_id)
         .fetch_one(&state.db)
         .await?;
-    if used + data.len() as i64 > state.config.file_quota_bytes {
+    if used + data.len() as i64 > state.config.storage_quota_bytes {
         return Err(ApiError::new(
             axum::http::StatusCode::UNPROCESSABLE_ENTITY,
             code::QUOTA_EXCEEDED,

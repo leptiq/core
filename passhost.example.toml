@@ -13,12 +13,12 @@ signup = "open"
 require_app_version = true
 data_dir = "data"
 cors_origins = ["*"]
-file_quota_bytes = 10737418240
+storage_quota_bytes = 10737418240
 webauthn_rp_id = "example.com"
 # Optional: your own clearsigned SRP modulus (requires patched clients).
 # srp_modulus_file = "modulus.asc"
 
-[alias]
+[pass.alias]
 enabled = false
 domains = ["alias.example.com"]
 smtp_listen = "0.0.0.0:2525"

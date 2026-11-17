@@ -13,8 +13,8 @@ use crate::{app::AppState, error::ApiResult, util::now};
 pub const MAX_MESSAGE: usize = 25 * 1024 * 1024;
 
 pub fn spawn(state: AppState) {
-    let addr = state.config.alias.smtp_listen.clone();
-    if addr.is_empty() || !state.config.alias.enabled {
+    let addr = state.ext::<crate::PassConfig>().alias.smtp_listen.clone();
+    if addr.is_empty() || !state.ext::<crate::PassConfig>().alias.enabled {
         return;
     }
     tokio::spawn(async move {
@@ -244,7 +244,7 @@ async fn session(state: AppState, sock: TcpStream) -> std::io::Result<()> {
     let (r, mut w) = sock.into_split();
     let mut reader = BufReader::new(r);
     let host = state
-        .config
+        .ext::<crate::PassConfig>()
         .alias
         .domains
         .first()

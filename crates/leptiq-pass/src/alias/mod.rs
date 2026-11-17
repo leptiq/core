@@ -38,7 +38,9 @@ pub async fn is_owner(conn: &mut AnyConnection, user_id: &str, email: &str) -> A
 }
 
 pub fn require_enabled(state: &AppState) -> ApiResult<()> {
-    if state.config.alias.enabled && !state.config.alias.domains.is_empty() {
+    if state.ext::<crate::PassConfig>().alias.enabled
+        && !state.ext::<crate::PassConfig>().alias.domains.is_empty()
+    {
         Ok(())
     } else {
         Err(ApiError::disabled("Aliases"))
@@ -69,7 +71,7 @@ fn verify_suffix(state: &AppState, user_id: &str, signed: &str) -> ApiResult<Str
 /// Domains the user can create aliases on: (domain, is_custom).
 pub async fn user_domains(state: &AppState, user_id: &str) -> ApiResult<Vec<(String, bool)>> {
     let mut out: Vec<(String, bool)> = state
-        .config
+        .ext::<crate::PassConfig>()
         .alias
         .domains
         .iter()
@@ -126,12 +128,12 @@ pub async fn options(
 }
 
 async fn check_limit(conn: &mut AnyConnection, state: &AppState, user_id: &str) -> ApiResult<()> {
-    if state.config.alias.max_aliases > 0 {
+    if state.ext::<crate::PassConfig>().alias.max_aliases > 0 {
         let (n,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM aliases WHERE user_id = $1")
             .bind(user_id)
             .fetch_one(&mut *conn)
             .await?;
-        if n >= state.config.alias.max_aliases {
+        if n >= state.ext::<crate::PassConfig>().alias.max_aliases {
             return Err(ApiError::new(
                 axum::http::StatusCode::UNPROCESSABLE_ENTITY,
                 crate::error::code::QUOTA_EXCEEDED,

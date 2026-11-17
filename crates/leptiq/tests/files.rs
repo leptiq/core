@@ -148,7 +148,7 @@ async fn attachment_lifecycle() {
 
 #[tokio::test]
 async fn quota_is_enforced() {
-    let s = server_with(|c| c.file_quota_bytes = 100).await;
+    let s = server_with(|c| c.storage_quota_bytes = 100).await;
     let c = Client::signup(&s, &unique("quo"), "pw").await;
     let f = c
         .post("pass/v1/file", json!({ "Metadata": "m", "ChunkCount": 1 }))
