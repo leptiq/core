@@ -84,6 +84,24 @@ async fn web_configuration() -> Json<Value> {
     ok(json!({ "Site": "", "PublishableKey": "", "Domain": "" }))
 }
 
+/// Referrals are a Proton promotion; reported as not eligible.
+async fn no_referrals() -> crate::error::ApiError {
+    crate::error::ApiError::not_found("Referrals")
+}
+
+async fn billing_information() -> Json<Value> {
+    ok(json!({
+        "BillingAddress": { "CountryCode": "", "State": null, "ZipCode": null },
+        "VatId": null,
+    }))
+}
+
+/// A fixed event ID with no changes: these event loops only exist for Proton
+/// products (mail, calendar, contacts) that passhost does not implement.
+async fn v6_events() -> Json<Value> {
+    ok(json!({ "EventID": "passhost-v6", "More": false, "Refresh": false }))
+}
+
 async fn subscription() -> Json<Value> {
     ok(json!({ "Subscription": null, "UpcomingSubscription": null }))
 }
@@ -164,4 +182,60 @@ pub fn routes() -> Router<AppState> {
         .route("/core/v4/checklist/{*rest}", get(|| async { ok(json!({ "Items": [], "CreatedAt": 0, "ExpiresAt": 0, "Visible": false, "Display": "Hidden" })) }))
         .route("/account/v1/onboarding", get(empty).put(empty))
         .route("/core/v4/settings/telemetry", put(empty))
+        // --- Account dashboard (account app's signed-in pages) ---
+        // Proton features passhost does not have: answer "nothing here".
+        .route("/account/v1/access/incoming", get(|| async { ok(json!({ "DelegatedAccesses": [] })) }))
+        .route("/account/v1/access/outgoing", get(|| async { ok(json!({ "DelegatedAccesses": [] })) }))
+        .route("/contacts/v4/contacts/emails", get(|| async { ok(json!({ "ContactEmails": [], "Total": 0 })) }))
+        .route("/core/v4/groups/members/internal", get(|| async { ok(json!({ "Memberships": [] })) }))
+        .route("/core/v4/users/invitations", get(|| async { ok(json!({ "UserInvitations": [] })) }))
+        .route("/core/v4/referrals/info", get(no_referrals))
+        .route("/core/v5/entitlements", get(|| async {
+            ok(json!({ "UserEntitlements": [], "OrganizationEntitlements": [], "MemberEntitlements": [] }))
+        }))
+        .route("/payments/v6/plans/entitlements", get(|| async { ok(json!({ "Plans": [], "Addons": [] })) }))
+        .route("/payments/v6/subscription/latest", get(|| async { ok(json!({ "Subscription": null })) }))
+        .route("/payments/v5/account/billing-information", get(billing_information))
+        .route(
+            "/oauth-token/v1/tokens",
+            get(|| async { ok(json!({ "Tokens": [] })) }),
+        )
+        .route(
+            "/payments/v4/invoices",
+            get(|| async { ok(json!({ "Invoices": [], "Total": 0 })) }),
+        )
+        .route(
+            "/payments/v5/invoices",
+            get(|| async { ok(json!({ "Invoices": [], "Total": 0 })) }),
+        )
+        // Dark-web breach monitoring needs a data source passhost lacks.
+        .route(
+            "/account/v4/breaches",
+            get(|| async { ok(json!({ "Breaches": [], "Samples": [], "IsEligible": false, "Count": 0 })) }),
+        )
+        // Security log: passhost records no sign-in history.
+        .route(
+            "/core/v4/logs/auth",
+            get(|| async { ok(json!({ "Logs": [], "Total": 0 })) }),
+        )
+        // Mail importer OAuth client IDs (Easy Switch): none configured.
+        .route(
+            "/core/v4/system/config",
+            get(|| async {
+                ok(json!({ "Config": {
+                    "oauth.google.client_id": "",
+                    "oauth.outlook.client_id": "",
+                    "oauth.zoom.client_id": "",
+                } }))
+            }),
+        )
+        // v6 event loops of products passhost does not serve: never any changes.
+        .route("/core/v6/events/latest", get(v6_events))
+        .route("/core/v6/events/{id}", get(v6_events))
+        .route("/mail/v6/events/latest", get(v6_events))
+        .route("/mail/v6/events/{id}", get(v6_events))
+        .route("/contacts/v6/events/latest", get(v6_events))
+        .route("/contacts/v6/events/{id}", get(v6_events))
+        .route("/calendar/v6/events/latest", get(v6_events))
+        .route("/calendar/v6/events/{id}", get(v6_events))
 }

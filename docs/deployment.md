@@ -61,9 +61,10 @@ account-api.example.com, api.example.com {
 
 The account app ships an Apache `.htaccess` with its routing rules; the Caddy
 block above mirrors the parts that matter. Its signed-in pages (account
-settings, `/u/<n>/...`) call Proton account endpoints passhost does not
-implement (mail, calendar, payments...), so they show an error; sign-in,
-signup and the account switcher work.
+settings, `/u/<n>/...`) work: profile and password, recovery, session
+management, language and appearance. Sections for Proton features passhost
+does not have (billing, Sentinel, dark-web monitoring, sign-in history) show
+their empty or "upgrade" state.
 
 Set `public_url = "https://pass.example.com"`. Cookies use the `Secure` flag when
 `public_url` is https. Set `webauthn_rp_id = "example.com"` so security keys work

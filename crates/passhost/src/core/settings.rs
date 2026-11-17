@@ -23,8 +23,8 @@ pub async fn settings_json(state: &AppState, user_id: &str) -> ApiResult<Value> 
     let fido2 = super::webauthn::registered_keys(state, user_id).await?;
     let enabled = (totp_enabled != 0) as i64 | if fido2.is_empty() { 0 } else { 2 };
     let mut base = json!({
-        "Email": { "Value": email, "Status": 1, "Notify": 0, "Reset": 0 },
-        "Phone": { "Value": null, "Status": 0, "Notify": 0, "Reset": 0 },
+        "Email": { "Value": email, "Status": 1, "Notify": 0, "Reset": 0, "UpdateTime": null },
+        "Phone": { "Value": null, "Status": 0, "Notify": 0, "Reset": 0, "UpdateTime": null },
         "Password": { "Mode": 1, "ExpirationTime": null },
         "2FA": { "Enabled": enabled, "Allowed": 3, "ExpirationTime": null, "RegisteredKeys": fido2 },
         "News": 0,
@@ -46,12 +46,24 @@ pub async fn settings_json(state: &AppState, user_id: &str) -> ApiResult<Value> 
         "Telemetry": 0,
         "CrashReports": 0,
         "HideSidePanel": 0,
-        "HighSecurity": { "Eligible": 0, "Value": 0 },
+        "HighSecurity": { "Eligible": 0, "Value": 0, "SummaryEmail": 0 },
         "SessionAccountRecovery": 0,
         "Checklists": [],
         "UsedClientFlags": 0,
         "AIAssistantFlags": 0,
         "BreachAlerts": { "Eligible": 0, "Value": 0, "EmailNotifications": 0 },
+        // Read by the account app's settings pages.
+        "AppWelcome": {},
+        "Mnemonic": { "UpdateTime": null },
+        "LoginIdentifierPolicy": 0,
+        "ProductDisabled": { "Mail": 0, "VPN": 0, "Calendar": 0, "Drive": 0, "Pass": 0, "Wallet": 0 },
+        "OrganizationPolicy": { "Enforced": 0 },
+        "NextPasswordReminderTime": null,
+        "EmergencyContactsLastModifiedTime": null,
+        "QrCodeSignInLastModifiedTime": null,
+        "RecoveryContactsLastModifiedTime": null,
+        "SignedInResetLastModifiedTime": null,
+        "UsedClients": [],
     });
     if let Ok(Value::Object(overrides)) = serde_json::from_str::<Value>(&settings) {
         merge(&mut base, Value::Object(overrides));

@@ -120,6 +120,31 @@ locked with a secret the client generates. It returns `Token` (`pst_...`). The s
 | GET, PUT | `/account/v1/onboarding` |
 | PUT | `/core/v4/settings/telemetry` |
 
+### Account dashboard stubs
+
+The account app's signed-in pages (`account.<domain>/u/<n>/...`) also call
+these. They answer with empty data for Proton features passhost does not have
+(mail, contacts, calendar, billing, delegated access, breach monitoring,
+sign-in history).
+
+| Methods | Path |
+|---|---|
+| GET | `/account/v1/access/incoming`, `/account/v1/access/outgoing` |
+| GET | `/account/v4/breaches` |
+| GET | `/contacts/v4/contacts/emails` |
+| GET | `/core/v4/groups/members/internal` |
+| GET | `/core/v4/users/invitations` |
+| GET | `/core/v4/referrals/info` (always "not eligible") |
+| GET | `/core/v4/logs/auth` |
+| GET | `/core/v4/system/config` |
+| GET | `/core/v5/entitlements` |
+| GET | `/payments/v4/invoices`, `/payments/v5/invoices` |
+| GET | `/payments/v5/account/billing-information` |
+| GET | `/payments/v6/plans/entitlements` |
+| GET | `/payments/v6/subscription/latest` |
+| GET | `/oauth-token/v1/tokens` |
+| GET | `/{core,mail,contacts,calendar}/v6/events/latest` and `/{id}` (never any changes) |
+
 ## Proton Pass API
 
 | Methods | Path |
