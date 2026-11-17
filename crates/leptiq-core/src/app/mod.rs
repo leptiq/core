@@ -210,7 +210,8 @@ async fn app_version(State(state): State<AppState>, req: Request, next: Next) ->
         // Plain browser requests (images, public links) carry no app version.
         let exempt = path.ends_with("/tests/ping")
             || path.contains("/public_link/")
-            || path.ends_with("/core/v4/images/logo");
+            || path.ends_with("/core/v4/images/logo")
+            || state.products.iter().any(|p| p.skips_app_version(path));
         match req
             .headers()
             .get("x-pm-appversion")

@@ -25,6 +25,12 @@ pub trait Product: Send + Sync + 'static {
     /// e.g. `/pass/v1`).
     fn routes(&self, state: &AppState) -> Router<AppState>;
 
+    /// Paths requested by plain browser fetches (e.g. file block storage)
+    /// that carry no `x-pm-appversion` header.
+    fn skips_app_version(&self, _path: &str) -> bool {
+        false
+    }
+
     /// Starts background jobs (cleanups, listeners...).
     fn spawn_background(&self, _state: &AppState) {}
 

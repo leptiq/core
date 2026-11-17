@@ -1964,6 +1964,7 @@ dependencies = [
  "hex",
  "leptiq-authenticator",
  "leptiq-core",
+ "leptiq-drive",
  "leptiq-pass",
  "pgp",
  "proton-srp",
@@ -2021,6 +2022,24 @@ dependencies = [
  "url",
  "webauthn-rs",
  "zeroize",
+]
+
+[[package]]
+name = "leptiq-drive"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "base64 0.22.1",
+ "http",
+ "leptiq-core",
+ "rand 0.8.8",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

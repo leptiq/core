@@ -16,6 +16,7 @@ path = "src/main.rs"
 leptiq-core.workspace = true
 leptiq-pass.workspace = true
 leptiq-authenticator.workspace = true
+leptiq-drive.workspace = true
 anyhow.workspace = true
 axum.workspace = true
 clap.workspace = true
