@@ -65,8 +65,50 @@ async fn features() -> Json<Value> {
     ok(json!({ "Features": [] }))
 }
 
-async fn plans() -> Json<Value> {
-    ok(json!({ "Plans": [], "DefaultPlans": [] }))
+/// Product bits (mail, drive, VPN, pass, wallet, lumo, meet) as used in
+/// `User.Subscribed` and plan `Services`.
+pub const ALL_PRODUCTS: i64 = 1 | 2 | 4 | 8 | 16 | 64 | 256;
+
+/// Far-future end of the fake subscription (2100-01-01).
+const FOREVER: i64 = 4_102_444_800;
+
+/// The one "plan" on Leptiq: everything included, free, never expiring.
+/// Clients get a real plan name (Proton Unlimited) so their feature checks
+/// pass; the patched clients hide plan and billing UI entirely.
+pub fn leptiq_plan(quota: i64) -> Value {
+    json!({
+        "ID": "leptiq",
+        "ParentMetaPlanID": "",
+        "Type": 1,
+        "Cycle": 12,
+        "Name": "bundle2022",
+        "Title": "Leptiq",
+        "Currency": "USD",
+        "Amount": 0,
+        "MaxDomains": 0,
+        "MaxAddresses": 15,
+        "MaxSpace": quota,
+        "MaxCalendars": 25,
+        "MaxMembers": 1,
+        "MaxVPN": 0,
+        "MaxTier": 0,
+        "Services": ALL_PRODUCTS,
+        "Features": 0,
+        "Quantity": 1,
+        "Offer": "default",
+        "Pricing": { "1": 0, "12": 0, "24": 0 },
+        "DefaultPricing": { "1": 0, "12": 0, "24": 0 },
+        "PeriodEnd": { "1": FOREVER, "12": FOREVER, "24": FOREVER },
+        "State": 1,
+        "Offers": [],
+    })
+}
+
+async fn plans(State(state): State<AppState>) -> Json<Value> {
+    ok(json!({
+        "Plans": [leptiq_plan(state.config.storage_quota_bytes)],
+        "DefaultPlans": [],
+    }))
 }
 
 /// No plans are sold here; clients fall back to their built-in free plan.
@@ -109,8 +151,31 @@ async fn user_apps(State(state): State<AppState>) -> Json<Value> {
     ok(json!({ "Apps": apps }))
 }
 
-async fn subscription() -> Json<Value> {
-    ok(json!({ "Subscription": null, "UpcomingSubscription": null }))
+async fn subscription(State(state): State<AppState>) -> Json<Value> {
+    let t = crate::util::now();
+    let subscription = json!({
+        "ID": "leptiq",
+        "InvoiceID": "",
+        "Cycle": 12,
+        "PeriodStart": t,
+        "PeriodEnd": FOREVER,
+        "CreateTime": t,
+        "CouponCode": null,
+        "Currency": "USD",
+        "Amount": 0,
+        "RenewAmount": 0,
+        "BaseRenewAmount": 0,
+        "RenewDiscount": 0,
+        "Renew": 0,
+        "Discount": 0,
+        "Plans": [leptiq_plan(state.config.storage_quota_bytes)],
+        "External": 0,
+        "IsTrial": false,
+        "TrialType": null,
+        "SecondarySubscriptions": [],
+        "RenewCycle": 12,
+    });
+    ok(json!({ "Subscription": subscription, "UpcomingSubscription": null }))
 }
 
 async fn payment_status() -> Json<Value> {

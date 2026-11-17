@@ -55,7 +55,7 @@ pub async fn user_json(state: &AppState, user_id: &str) -> ApiResult<Value> {
         "UsedDriveSpace": 0,
         "MaxSpace": quota,
         "MaxBaseSpace": quota,
-        "MaxDriveSpace": 0,
+        "MaxDriveSpace": quota,
         "MaxUpload": quota,
         "ProductUsedSpace": { "Calendar": 0, "Contact": 0, "Drive": 0, "Mail": 0, "Pass": used_space },
         "Credit": 0,
@@ -63,7 +63,9 @@ pub async fn user_json(state: &AppState, user_id: &str) -> ApiResult<Value> {
         "Role": 0,
         "Private": 1,
         "Type": 1,
-        "Subscribed": 0,
+        // Every product counts as paid: there is nothing to buy on Leptiq, and
+        // the clients hide upsells for paying users (see core::misc::leptiq_plan).
+        "Subscribed": crate::core::misc::ALL_PRODUCTS,
         "Services": 1,
         "Delinquent": 0,
         "DriveEarlyAccess": 0,
