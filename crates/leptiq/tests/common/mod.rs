@@ -24,12 +24,12 @@ pub async fn server() -> TestServer {
 
 pub async fn server_with(f: impl FnOnce(&mut Config)) -> TestServer {
     let _ = tracing_subscriber::fmt()
-        .with_env_filter("passhost=error")
+        .with_env_filter("leptiq=error")
         .with_test_writer()
         .try_init();
     let dir = tempfile::tempdir().unwrap();
     let mut config = Config::default();
-    config.database_url = std::env::var("PASSHOST_TEST_DATABASE_URL")
+    config.database_url = std::env::var("LEPTIQ_TEST_DATABASE_URL")
         .unwrap_or_else(|_| format!("sqlite://{}/test.db?mode=rwc", dir.path().display()));
     config.data_dir = dir.path().join("data").display().to_string();
     config.mail_domain = "example.test".into();

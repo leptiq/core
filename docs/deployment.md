@@ -6,17 +6,17 @@ The official web clients expect these hosts:
 
 | Host | Serves |
 |---|---|
-| `pass.example.com` | Pass web app (static files, `applications/pass/dist`) and `/api` → passhost |
-| `account.example.com` | Account app (static files, login/signup) and `/api` → passhost |
-| `account-api.example.com` | → passhost (the account app's anti-abuse challenge frame, `/challenge/v4/html`) |
+| `pass.example.com` | Pass web app (static files, `applications/pass/dist`) and `/api` → leptiq |
+| `account.example.com` | Account app (static files, login/signup) and `/api` → leptiq |
+| `account-api.example.com` | → leptiq (the account app's anti-abuse challenge frame, `/challenge/v4/html`) |
 | `api.example.com` | API root for the Android app (`PROD_ENV_URL=example.com`) |
 
-passhost answers on both `/api/...` and `/...` (`base_paths` in the config), so one
+leptiq answers on both `/api/...` and `/...` (`base_paths` in the config), so one
 instance can serve all of these hosts.
 
 The account app's signup and login forms load an iframe from
 `account-api.<domain>/challenge/v4/html` (Proton's bot detection; it also draws
-the username field). passhost serves a stand-in that draws the fields and
+the username field). leptiq serves a stand-in that draws the fields and
 reports an empty fingerprint. Without that host the forms wait for the frame
 to time out (about a minute) and the username field is missing.
 
@@ -62,7 +62,7 @@ account-api.example.com, api.example.com {
 The account app ships an Apache `.htaccess` with its routing rules; the Caddy
 block above mirrors the parts that matter. Its signed-in pages (account
 settings, `/u/<n>/...`) work: profile and password, recovery, session
-management, language and appearance. Sections for Proton features passhost
+management, language and appearance. Sections for Proton features leptiq
 does not have (billing, Sentinel, dark-web monitoring, sign-in history) show
 their empty or "upgrade" state.
 
@@ -72,11 +72,11 @@ on every subdomain.
 
 ## Database
 
-- SQLite: `database_url = "sqlite:///var/lib/passhost/passhost.db?mode=rwc"`. Uses a
+- SQLite: `database_url = "sqlite:///var/lib/leptiq/leptiq.db?mode=rwc"`. Uses a
   single connection in WAL mode; fine for families and small teams.
 - PostgreSQL: `database_url = "postgres://user:pass@host/db"`.
 
-Migrations run automatically at start-up (`passhost migrate` runs them alone).
+Migrations run automatically at start-up (`leptiq migrate` runs them alone).
 
 ## Backups
 
@@ -93,9 +93,9 @@ SMTP relay:
 [smtp]
 host = "smtp.example.com"
 port = 587
-username = "passhost@example.com"
+username = "leptiq@example.com"
 password = "..."
-from = "passhost@example.com"
+from = "leptiq@example.com"
 security = "starttls"   # or "tls" / "none"
 ```
 
@@ -120,5 +120,5 @@ sent to that reverse alias from one of the alias's mailboxes go out from the
 alias address.
 
 For users' custom domains, users add a TXT record
-`passhost-verification=<token>` and an MX pointing at `mx_host`. Then they press
+`leptiq-verification=<token>` and an MX pointing at `mx_host`. Then they press
 "verify" in the client.

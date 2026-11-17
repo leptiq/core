@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style id="passhost-styles"></style>
+<style id="leptiq-styles"></style>
 <style>html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }</style>
 </head>
 <body>
 <div id="root"></div>
 <script>
-// passhost stand-in for Proton's anti-abuse challenge frame.
+// leptiq stand-in for Proton's anti-abuse challenge frame.
 //
 // The account app renders some form fields (e.g. the signup username) into
 // this iframe: it sends us their HTML, we display it and forward user input
 // back so the real (hidden) inputs in the parent page receive it. Proton's
 // frame also collects a browser fingerprint; we report an empty one, which
-// passhost never checks.
+// leptiq never checks.
 (function () {
     var parentOrigin = '*';
     var root = document.getElementById('root');
@@ -89,7 +89,7 @@
         switch (data.type) {
             case 'load':
                 var p = data.payload || {};
-                document.getElementById('passhost-styles').textContent = p.stylesRoot || '';
+                document.getElementById('leptiq-styles').textContent = p.stylesRoot || '';
                 if (p.bodyClassName) document.body.className = p.bodyClassName;
                 send({ type: 'onload' });
                 break;

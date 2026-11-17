@@ -45,7 +45,7 @@ pub async fn ensure(
 pub fn plan_json(state: &AppState, storage_used: i64) -> Value {
     json!({
         "Type": "plus",
-        "InternalName": "passhost",
+        "InternalName": "leptiq",
         "DisplayName": "Self-hosted",
         "ManageSubscription": false,
         "SubscriptionEnd": null,

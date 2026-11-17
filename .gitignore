@@ -3,4 +3,4 @@
 *.db-shm
 *.db-wal
 /data
-passhost.toml
+leptiq.toml

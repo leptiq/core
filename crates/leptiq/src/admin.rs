@@ -1,4 +1,4 @@
-//! `passhost admin ...` commands.
+//! `leptiq admin ...` commands.
 
 use clap::Subcommand;
 

@@ -1,7 +1,7 @@
 # Using the official clients
 
 Proton's clients are GPL-3.0 and have build-time switches for other
-environments. passhost does not ship modified client code. The scripts in
+environments. leptiq does not ship modified client code. The scripts in
 `clients/` clone the upstream repositories, adjust configuration, and build.
 
 ## Browser extension (Chrome / Firefox)
@@ -20,7 +20,7 @@ app**, which the extension and web app need for login and signup.
   which lets the account page hand the session to the extension.
 - The account app does the SRP signup/login and then forks the session to the
   extension (`auth/v4/sessions/forks`). Serve its `dist/` at
-  `account.example.com`, with `/api` proxied to passhost (see
+  `account.example.com`, with `/api` proxied to leptiq (see
   `docs/deployment.md`).
 - The script works around the parts of the public WebClients mirror that only
   build inside Proton's network (a missing preinstall script, internal npm
@@ -32,16 +32,16 @@ Tested end to end with Firefox against a local instance: signup in the account
 app, session fork to the extension, initial sync (default vault creation), and
 saving a login from a web page through the extension's "Save login" prompt.
 
-For a local test setup with a port, e.g. `DOMAIN=passhost.localhost:8443`: the
+For a local test setup with a port, e.g. `DOMAIN=leptiq.localhost:8443`: the
 `*.localhost` names resolve to 127.0.0.1 in Firefox without DNS changes, the
 script strips the port from the manifest patterns, and a self-signed wildcard
-certificate for `*.passhost.localhost` works once its exception has been
+certificate for `*.leptiq.localhost` works once its exception has been
 accepted for each host (`pass.`, `account.`, `account-api.`).
 
 ## Pass web app
 
 `build-webclients.sh` also builds the web app (`applications/pass/dist`).
-Serve it at `pass.example.com` with `/api` proxied to passhost (see
+Serve it at `pass.example.com` with `/api` proxied to leptiq (see
 `docs/deployment.md`). It signs in through the account app at
 `account.<same domain>`, which forks the session to it.
 
@@ -68,7 +68,7 @@ pass login --pat 'pst_...::<key>'
 ```
 
 The CLI only supports personal-access-token login against custom environments.
-passhost exposes token management at `account/v4/personal-access-token`. The
+leptiq exposes token management at `account/v4/personal-access-token`. The
 token's keys are created client-side; see `docs/api.md`.
 
 ## iOS
@@ -79,7 +79,7 @@ App Store builds always use Proton's servers.
 ## SRP modulus
 
 Clients only accept an SRP modulus signed with Proton's modulus key. By default
-passhost serves the modulus Proton already published and signed. It is a public
+leptiq serves the modulus Proton already published and signed. It is a public
 2048-bit safe prime, so reusing it costs no security, and no client needs a
 patch for it. To use your own, set `srp_modulus_file` to a clearsigned modulus
 and replace the modulus public key in your client builds.

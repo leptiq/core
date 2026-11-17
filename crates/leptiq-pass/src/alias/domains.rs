@@ -15,7 +15,7 @@ use crate::{
     util::{new_token, now, ok, ok_empty},
 };
 
-pub const TXT_PREFIX: &str = "passhost-verification=";
+pub const TXT_PREFIX: &str = "leptiq-verification=";
 
 async fn domain_json(state: &AppState, user_id: &str, id: i64) -> ApiResult<Value> {
     let row: Option<(i64, String, String, i64, i64, i64, i64, i64, i64)> = sqlx::query_as(
@@ -181,7 +181,7 @@ pub async fn verify(
         .mx_host
         .to_lowercase();
     let mx = !mx_hosts.is_empty() && (expected.is_empty() || mx_hosts.contains(&expected));
-    // Forwarded mail is not DKIM-signed by passhost, so DKIM is not required.
+    // Forwarded mail is not DKIM-signed by leptiq, so DKIM is not required.
     let dkim = true;
     sqlx::query(
         "UPDATE custom_domains SET ownership_verified = $1, mx_verified = $2, spf_verified = $3, dkim_verified = $4, dmarc_verified = $5 \

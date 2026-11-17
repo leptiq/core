@@ -250,7 +250,7 @@ async fn session(state: AppState, sock: TcpStream) -> std::io::Result<()> {
         .first()
         .cloned()
         .unwrap_or_else(|| "localhost".into());
-    w.write_all(format!("220 {host} ESMTP passhost\r\n").as_bytes())
+    w.write_all(format!("220 {host} ESMTP leptiq\r\n").as_bytes())
         .await?;
     let mut mail_from: Option<String> = None;
     let mut rcpts: Vec<Recipient> = vec![];

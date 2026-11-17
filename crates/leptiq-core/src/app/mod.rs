@@ -147,6 +147,16 @@ pub fn build_router(state: AppState) -> Router {
             )
         }),
     );
+    // The Leptiq mark, for browsers that open the server directly.
+    let favicon = get(|| async {
+        (
+            [(axum::http::header::CONTENT_TYPE, "image/svg+xml")],
+            include_str!("../../../../assets/leptiq-mark.svg"),
+        )
+    });
+    router = router
+        .route("/favicon.svg", favicon.clone())
+        .route("/favicon.ico", favicon);
     for base in &state.config.base_paths {
         let base = base.trim_end_matches('/');
         router = if base.is_empty() {

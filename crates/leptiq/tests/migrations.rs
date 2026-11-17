@@ -5,7 +5,7 @@
 async fn core_and_product_migrations_apply_and_rerun() {
     let dir = tempfile::tempdir().unwrap();
     let mut config = leptiq::Config::default();
-    config.database_url = std::env::var("PASSHOST_TEST_DATABASE_URL")
+    config.database_url = std::env::var("LEPTIQ_TEST_DATABASE_URL")
         .unwrap_or_else(|_| format!("sqlite://{}/m.db?mode=rwc", dir.path().display()));
     config.data_dir = dir.path().join("data").display().to_string();
 

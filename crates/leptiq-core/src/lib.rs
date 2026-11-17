@@ -1,5 +1,6 @@
 #![recursion_limit = "512"]
-//! passhost: a self-hostable, open-source server for Proton Pass clients.
+//! leptiq-core: the shared platform of Leptiq, a self-hostable server for the
+//! official Proton apps (accounts, auth, sessions, keys, events, storage).
 //!
 //! The server is zero-knowledge: it stores and relays the encrypted blobs,
 //! OpenPGP keys and SRP verifiers produced by clients. Its only real

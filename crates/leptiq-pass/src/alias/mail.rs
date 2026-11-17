@@ -150,7 +150,7 @@ pub fn rewrite(raw: &[u8], from: &str, reply_to: Option<&str>) -> Vec<u8> {
     if let Some(r) = reply_to {
         out.push_str(&format!("Reply-To: {r}\r\n"));
     }
-    out.push_str("X-Passhost-Forwarded: yes\r\n\r\n");
+    out.push_str("X-Leptiq-Forwarded: yes\r\n\r\n");
     let mut bytes = out.into_bytes();
     bytes.extend_from_slice(&body);
     bytes

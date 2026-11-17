@@ -10,7 +10,7 @@ use serde_json::{Map, Value};
 pub enum SignupPolicy {
     /// Anyone can create an account.
     Open,
-    /// Accounts need an invite code created with `passhost admin invite`.
+    /// Accounts need an invite code created with `leptiq admin invite`.
     Invite,
     /// Only admins can create accounts.
     Closed,
@@ -20,7 +20,7 @@ pub enum SignupPolicy {
 pub struct Config {
     /// Address to listen on.
     pub bind: String,
-    /// sqlx database URL: `sqlite://data/passhost.db?mode=rwc` or `postgres://...`.
+    /// sqlx database URL: `sqlite://data/leptiq.db?mode=rwc` or `postgres://...`.
     pub database_url: String,
     /// Path prefixes the API is served under. Clients use `/api` on the web
     /// and a bare host for `api.<domain>` style deployments; both work.
@@ -73,10 +73,10 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             bind: "0.0.0.0:8080".into(),
-            database_url: "sqlite://passhost.db?mode=rwc".into(),
+            database_url: "sqlite://leptiq.db?mode=rwc".into(),
             base_paths: vec!["/api".into(), "".into()],
             public_url: "http://localhost:8080".into(),
-            mail_domain: "passhost.local".into(),
+            mail_domain: "leptiq.local".into(),
             signup: SignupPolicy::Open,
             require_app_version: true,
             srp_modulus_file: None,
@@ -91,7 +91,7 @@ impl Default for Config {
                 port: 587,
                 username: String::new(),
                 password: String::new(),
-                from: "passhost@localhost".into(),
+                from: "leptiq@localhost".into(),
                 security: "starttls".into(),
             },
             webauthn_rp_id: "localhost".into(),
@@ -121,7 +121,7 @@ impl Config {
     pub fn load(path: &str) -> anyhow::Result<Self> {
         let config: Config = Figment::from(Serialized::defaults(Config::default()))
             .merge(Toml::file(path))
-            .merge(Env::prefixed("PASSHOST_").split("__"))
+            .merge(Env::prefixed("LEPTIQ_").split("__"))
             .extract()?;
         Ok(config)
     }

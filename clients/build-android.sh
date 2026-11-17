@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the official Proton Pass Android app against a self-hosted passhost.
+# Builds the official Proton Pass Android app against a self-hosted leptiq.
 # android-pass treats a PROD_ENV_URL build as a "custom build": it uses
 # https://api.<host>/ and disables Proton's certificate pinning.
 #

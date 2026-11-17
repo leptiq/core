@@ -1,12 +1,22 @@
-# passhost
+<p align="center"><img src="assets/leptiq-mark.svg" alt="Leptiq" width="120"></p>
 
-An open-source, self-hostable server for **Proton Pass** clients, written in Rust.
+# Leptiq
 
-passhost reimplements the HTTP API that the official Proton Pass apps use: Proton's
-core account API (SRP login, sessions, keys, addresses, events) and the Pass API
-(`pass/v1`). Clients built to point at your domain can then store their
-end-to-end-encrypted vaults on your own server. It is an independent project, not
-affiliated with or endorsed by Proton AG.
+An open-source, self-hostable server for the official **Proton** apps, written
+in Rust. Products are added one at a time; the first is **Leptiq Pass**, for
+the Proton Pass clients.
+
+Leptiq reimplements the HTTP API the official apps use: Proton's core account
+API (SRP login, sessions, keys, addresses, events) and, per product, its own
+API (for Pass, `pass/v1`). Clients built to point at your domain can then store
+their end-to-end-encrypted data on your own server. It is an independent
+project, not affiliated with or endorsed by Proton AG.
+
+| Crate | Contents |
+|---|---|
+| `leptiq-core` | Accounts, authentication, sessions, keys, events, config, storage, and the `Product` trait products plug into |
+| `leptiq-pass` | Leptiq Pass: the Pass API, aliases, personal access tokens |
+| `leptiq` | The `leptiq` server binary and admin commands; end-to-end tests |
 
 The server is **zero-knowledge**, like Proton's. Clients encrypt everything before
 upload: vault keys (OpenPGP, to the user's address key), item keys and contents
@@ -14,7 +24,7 @@ upload: vault keys (OpenPGP, to the user's address key), item keys and contents
 Its only cryptographic job is checking SRP login proofs, which uses Proton's own
 [`proton-srp`](https://github.com/ProtonMail/proton-crypto-rs) crate.
 
-## Features
+## Leptiq Pass features
 
 | Area | Status |
 |---|---|
@@ -38,17 +48,17 @@ test suite runs against both.
 
 ```bash
 cargo build --release
-cp passhost.example.toml passhost.toml   # edit public_url, mail_domain, ...
-./target/release/passhost serve
+cp leptiq.example.toml leptiq.toml   # edit public_url, mail_domain, ...
+./target/release/leptiq serve
 ```
 
 Or with Docker:
 
 ```bash
-docker build -t passhost .
-docker run -p 8080:8080 -v passhost-data:/var/lib/passhost \
-  -e PASSHOST_PUBLIC_URL=https://pass.example.com \
-  -e PASSHOST_MAIL_DOMAIN=example.com passhost
+docker build -t leptiq .
+docker run -p 8080:8080 -v leptiq-data:/var/lib/leptiq \
+  -e LEPTIQ_PUBLIC_URL=https://pass.example.com \
+  -e LEPTIQ_MAIL_DOMAIN=example.com leptiq
 ```
 
 The first account created on a fresh instance becomes the instance admin.
@@ -56,10 +66,10 @@ The first account created on a fresh instance becomes the instance admin.
 Admin commands:
 
 ```bash
-passhost admin invite              # one-time signup code (signup = "invite")
-passhost admin users               # list users
-passhost admin set-admin alice     # grant admin
-passhost admin delete-user alice
+leptiq admin invite              # one-time signup code (signup = "invite")
+leptiq admin users               # list users
+leptiq admin set-admin alice     # grant admin
+leptiq admin delete-user alice
 ```
 
 ## Clients
@@ -74,7 +84,7 @@ needs a build that points at your domain; see [docs/clients.md](docs/clients.md)
 - **Pass CLI**: `PROTON_PASS_ENVIRONMENT=https://<host> pass login --pat <token>`.
 - **iOS**: only QA builds accept a custom environment.
 
-passhost serves the SRP modulus that Proton published and signed, so clients
+leptiq serves the SRP modulus that Proton published and signed, so clients
 verify it without patches. To use your own modulus, set `srp_modulus_file` and
 patch the modulus-signing key into your client builds.
 
@@ -88,7 +98,7 @@ patch the modulus-signing key into your client builds.
 
 ```bash
 cargo test                                    # SQLite
-PASSHOST_TEST_DATABASE_URL=postgres://... cargo test   # Postgres
+LEPTIQ_TEST_DATABASE_URL=postgres://... cargo test   # Postgres
 ```
 
 The integration tests act as a real client. They use real SRP and generate real

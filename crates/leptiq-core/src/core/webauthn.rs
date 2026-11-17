@@ -35,7 +35,7 @@ fn webauthn(state: &AppState) -> ApiResult<Webauthn> {
     let origin = Url::parse(&format!("{scheme}://{rp_id}")).map_err(ApiError::internal)?;
     WebauthnBuilder::new(rp_id, &origin)
         .map_err(ApiError::internal)?
-        .rp_name("passhost")
+        .rp_name("leptiq")
         .allow_subdomains(true)
         .allow_any_port(true)
         .build()

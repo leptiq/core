@@ -3,7 +3,7 @@ mod common;
 use common::*;
 
 /// The account app's signed-in pages (account settings) call Proton account
-/// endpoints passhost has no feature for; they must answer with empty data in
+/// endpoints leptiq has no feature for; they must answer with empty data in
 /// the shape the client reads, or the pages show "Something went wrong".
 #[tokio::test]
 async fn account_dashboard_endpoints() {
@@ -56,4 +56,10 @@ async fn account_dashboard_endpoints() {
         );
     }
     assert_eq!(settings["UserSettings"]["HighSecurity"]["SummaryEmail"], 0);
+
+    // The Leptiq mark is served as the favicon (no app version needed).
+    let root = s.base.trim_end_matches("/api");
+    let r = reqwest::get(format!("{root}/favicon.svg")).await.unwrap();
+    assert_eq!(r.status(), 200);
+    assert_eq!(r.headers()["content-type"], "image/svg+xml");
 }

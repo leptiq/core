@@ -3,7 +3,7 @@
 Every route is served under each configured base path (by default `/api` and `/`).
 Successful responses look like `{"Code": 1000, ...}`; errors look like `{"Code": N, "Error": "..."}`.
 
-Personal access tokens (`account/v4/personal-access-token`) use passhost's own request format, because Proton's is not public. `POST` takes
+Personal access tokens (`account/v4/personal-access-token`) use leptiq's own request format, because Proton's is not public. `POST` takes
 `{Name, ExpirationTime?, UserKey: {PrivateKey}, AddressKey: {PrivateKey, Token?, Signature?}, KeySalt?}`, where the keys are
 locked with a secret the client generates. It returns `Token` (`pst_...`). The string the CLI uses is `<Token>::<base64url secret>`.
 
@@ -123,7 +123,7 @@ locked with a secret the client generates. It returns `Token` (`pst_...`). The s
 ### Account dashboard stubs
 
 The account app's signed-in pages (`account.<domain>/u/<n>/...`) also call
-these. They answer with empty data for Proton features passhost does not have
+these. They answer with empty data for Proton features leptiq does not have
 (mail, contacts, calendar, billing, delegated access, breach monitoring,
 sign-in history).
 

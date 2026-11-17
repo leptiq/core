@@ -98,9 +98,9 @@ async fn billing_information() -> Json<Value> {
 }
 
 /// A fixed event ID with no changes: these event loops only exist for Proton
-/// products (mail, calendar, contacts) that passhost does not implement.
+/// products (mail, calendar, contacts) that leptiq does not implement.
 async fn v6_events() -> Json<Value> {
-    ok(json!({ "EventID": "passhost-v6", "More": false, "Refresh": false }))
+    ok(json!({ "EventID": "leptiq-v6", "More": false, "Refresh": false }))
 }
 
 /// The apps this server runs: one per registered product.
@@ -190,7 +190,7 @@ pub fn routes() -> Router<AppState> {
         .route("/account/v1/onboarding", get(empty).put(empty))
         .route("/core/v4/settings/telemetry", put(empty))
         // --- Account dashboard (account app's signed-in pages) ---
-        // Proton features passhost does not have: answer "nothing here".
+        // Proton features leptiq does not have: answer "nothing here".
         .route("/account/v1/access/incoming", get(|| async { ok(json!({ "DelegatedAccesses": [] })) }))
         .route("/account/v1/access/outgoing", get(|| async { ok(json!({ "DelegatedAccesses": [] })) }))
         .route("/contacts/v4/contacts/emails", get(|| async { ok(json!({ "ContactEmails": [], "Total": 0 })) }))
@@ -215,12 +215,12 @@ pub fn routes() -> Router<AppState> {
             "/payments/v5/invoices",
             get(|| async { ok(json!({ "Invoices": [], "Total": 0 })) }),
         )
-        // Dark-web breach monitoring needs a data source passhost lacks.
+        // Dark-web breach monitoring needs a data source leptiq lacks.
         .route(
             "/account/v4/breaches",
             get(|| async { ok(json!({ "Breaches": [], "Samples": [], "IsEligible": false, "Count": 0 })) }),
         )
-        // Security log: passhost records no sign-in history.
+        // Security log: leptiq records no sign-in history.
         .route(
             "/core/v4/logs/auth",
             get(|| async { ok(json!({ "Logs": [], "Total": 0 })) }),
@@ -236,7 +236,7 @@ pub fn routes() -> Router<AppState> {
                 } }))
             }),
         )
-        // v6 event loops of products passhost does not serve: never any changes.
+        // v6 event loops of products leptiq does not serve: never any changes.
         .route("/core/v6/events/latest", get(v6_events))
         .route("/core/v6/events/{id}", get(v6_events))
         .route("/mail/v6/events/latest", get(v6_events))

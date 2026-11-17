@@ -4,13 +4,13 @@ use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
 #[command(
-    name = "passhost",
+    name = "leptiq",
     version,
-    about = "Self-hostable server for Proton Pass clients"
+    about = "Leptiq: self-hostable server for the official Proton apps"
 )]
 struct Cli {
-    /// Path to a TOML config file (env vars prefixed PASSHOST_ override it).
-    #[arg(short, long, env = "PASSHOST_CONFIG", default_value = "passhost.toml")]
+    /// Path to a TOML config file (env vars prefixed LEPTIQ_ override it).
+    #[arg(short, long, env = "LEPTIQ_CONFIG", default_value = "leptiq.toml")]
     config: String,
     #[command(subcommand)]
     command: Option<Command>,
