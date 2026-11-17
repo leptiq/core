@@ -9,6 +9,7 @@ The official web clients expect these hosts:
 | `pass.example.com` | Pass web app (static files, `applications/pass/dist`) and `/api` → leptiq |
 | `account.example.com` | Account app (static files, login/signup) and `/api` → leptiq |
 | `drive.example.com` | Drive web app (static files, `applications/drive/dist`) and `/api` → leptiq |
+| `lumo.example.com` | Assistant web app (`applications/lumo/dist`) and `/api` → leptiq (disable response buffering for streaming) |
 | `account-api.example.com` | → leptiq (the account app's anti-abuse challenge frame, `/challenge/v4/html`) |
 | `api.example.com` | API root for the Android app (`PROD_ENV_URL=example.com`) |
 
@@ -123,3 +124,28 @@ alias address.
 For users' custom domains, users add a TXT record
 `leptiq-verification=<token>` and an MX pointing at `mx_host`. Then they press
 "verify" in the client.
+
+## Assistant
+
+The Assistant (Proton's Lumo clients) forwards conversations to an
+OpenAI-compatible chat API:
+
+```toml
+[assistant]
+base_url = "https://opencode.ai/zen/v1"   # default: OpenCode Zen
+api_key = "public"                          # Zen's anonymous key for free models
+model = "big-pickle"
+# models = { "lumo-max" = "some-bigger-model" }   # per client model
+# system_prompt = "..."
+# server_key_file = "assistant-key.asc"           # default: generated, kept in the DB
+```
+
+Any OpenAI-compatible endpoint works: OpenRouter, a local Ollama or llama.cpp
+server (`base_url = "http://127.0.0.1:11434/v1"`, `api_key = ""`), or a paid
+provider. OpenCode Zen's anonymous free tier is rate limited (and may answer 429
+right away); rate limits reach the client as "try again later".
+
+The Lumo client must be built with this server's public key: `leptiq/build.sh`
+in leptiq/webclients downloads it from `https://pass.<domain>/api/assistant/public-key`
+(or set `LUMO_PUB_KEY_PATH`). Prompts are decrypted on the server and sent to the
+model provider in plain text; choose a provider you trust.

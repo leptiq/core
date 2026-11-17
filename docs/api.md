@@ -346,3 +346,26 @@ quota, and stores each block's SHA-256 for the client to verify.
 Sharing, devices, photo and album lists, invitations and onboarding answer empty.
 Block URLs are relative (`[drive] storage_url`, default `/api/drive/storage`), so
 the Drive web app must be served with `/api` proxied to the server.
+
+## Assistant API (`leptiq-assistant`)
+
+Serves Proton's Lumo clients ("Leptiq Assistant"). Prompts and answers are
+end-to-end encrypted between the client and the server: each request carries a
+fresh AES-256-GCM key, OpenPGP-encrypted to the server's key (the client build
+embeds the public half). The server decrypts the turns, forwards them to an
+OpenAI-compatible chat API, and streams the answer back as encrypted SSE
+deltas. Conversations are stored as client ciphertext.
+
+| Methods | Path |
+|---|---|
+| POST | `/ai/v1/chat/completions` (SSE; upstream 429 → 429) |
+| GET | `/ai/v1/models`, `/ai/v1/limits` |
+| GET | `/assistant/public-key` (armored key to build the Lumo client with) |
+| GET, POST | `/lumo/v1/masterkeys` |
+| GET, POST, DELETE | `/lumo/v1/spaces`; GET, PUT, DELETE `/lumo/v1/spaces/{id}` |
+| POST | `/lumo/v1/spaces/{id}/conversations`, `/lumo/v1/spaces/{id}/assets` |
+| GET, PUT, DELETE | `/lumo/v1/conversations/{id}`; POST `.../messages` |
+| GET, DELETE | `/lumo/v1/messages/{id}` |
+| GET, PUT, DELETE | `/lumo/v1/assets/{id}` |
+| GET, POST, PUT | `/lumo/v1/settings` |
+| GET | `/lumo/v1/events/latest`, `/lumo/v1/events/{id}` |
