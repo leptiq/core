@@ -113,7 +113,17 @@ fn api_routes(state: &AppState) -> Router<AppState> {
 
 pub fn build_router(state: AppState) -> Router {
     let api = api_routes(&state).layer(middleware::from_fn_with_state(state.clone(), app_version));
-    let mut router = Router::new();
+    // Proton's anti-abuse challenge iframe (served on `account-api.<domain>`);
+    // loaded by a plain iframe, so it is outside the app-version check.
+    let mut router = Router::new().route(
+        "/challenge/v4/html",
+        get(|| async {
+            (
+                [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
+                include_str!("challenge.html"),
+            )
+        }),
+    );
     for base in &state.config.base_paths {
         let base = base.trim_end_matches('/');
         router = if base.is_empty() {
@@ -160,7 +170,10 @@ fn cors(config: &Config) -> CorsLayer {
 async fn app_version(State(state): State<AppState>, req: Request, next: Next) -> Response {
     if state.config.require_app_version && req.method() != Method::OPTIONS {
         let path = req.uri().path();
-        let exempt = path.ends_with("/tests/ping") || path.contains("/public_link/");
+        // Plain browser requests (images, public links) carry no app version.
+        let exempt = path.ends_with("/tests/ping")
+            || path.contains("/public_link/")
+            || path.ends_with("/core/v4/images/logo");
         match req
             .headers()
             .get("x-pm-appversion")

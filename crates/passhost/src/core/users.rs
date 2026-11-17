@@ -187,7 +187,13 @@ pub async fn create_user(
         .clone()
         .unwrap_or_else(|| state.config.mail_domain.clone())
         .to_lowercase();
-    let email = format!("{name}@{domain}");
+    // External signups (an existing email as the login) keep that address;
+    // internal ones get <username>@<domain>.
+    let email = if req.username.is_none() && raw.contains('@') {
+        raw.clone()
+    } else {
+        format!("{name}@{domain}")
+    };
     let exists: Option<(String,)> = sqlx::query_as("SELECT id FROM users WHERE name = $1")
         .bind(&name)
         .fetch_optional(&state.db)
@@ -208,6 +214,7 @@ pub async fn create_user(
     let first_user: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users")
         .fetch_one(&state.db)
         .await?;
+    let mut tx = state.db.begin().await?;
     sqlx::query(
         "INSERT INTO users (id, name, display_name, email, srp_version, srp_modulus_id, srp_salt, srp_verifier, is_admin, created) \
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
@@ -222,8 +229,33 @@ pub async fn create_user(
     .bind(&req.auth.verifier)
     .bind((first_user.0 == 0) as i64)
     .bind(now())
-    .execute(&state.db)
+    .execute(&mut *tx)
     .await?;
+    // Like Proton, signup creates the user's first address (without keys);
+    // the client then calls `keys/setup` for it.
+    let address_id = new_id();
+    sqlx::query(
+        "INSERT INTO addresses (id, user_id, email, display_name, signature, ordering, created) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+    )
+    .bind(&address_id)
+    .bind(&id)
+    .bind(&email)
+    .bind(&name)
+    .bind("")
+    .bind(1i64)
+    .bind(now())
+    .execute(&mut *tx)
+    .await?;
+    crate::events::push(
+        &mut tx,
+        &id,
+        crate::events::kind::ADDRESS,
+        None,
+        Some(&address_id),
+    )
+    .await?;
+    crate::pass::invites::on_address_created(&mut tx, &email).await?;
+    tx.commit().await?;
     if let (SignupPolicy::Invite, Some(code)) = (state.config.signup, invite) {
         sqlx::query("UPDATE signup_invites SET used_by = $1 WHERE code = $2")
             .bind(&id)

@@ -215,7 +215,7 @@ pub async fn auth(
     State(state): State<AppState>,
     headers: axum::http::HeaderMap,
     Json(req): Json<AuthReq>,
-) -> ApiResult<Json<Value>> {
+) -> ApiResult<axum::response::Response> {
     let (user, server_proof) = verify_srp(
         &state,
         "login",
@@ -239,15 +239,19 @@ pub async fn auth(
         .and_then(|v| v.split('@').next())
         .unwrap_or("")
         .to_string();
-    let created = sessions::create(
-        &state,
-        Some(&user.id),
-        &client_id,
-        pending,
-        req.persistent_cookies == Some(1),
-    )
-    .await?;
-    Ok(ok(json!({
+    let persistent = req.persistent_cookies == Some(1);
+    // Web clients log in from an unauthenticated session and keep using it:
+    // upgrade it in place and, if it was cookie-based, refresh its cookies.
+    let unauth = match super::extract::load_session(&headers, &state).await {
+        Ok(s) if s.user_id.is_none() => Some(s),
+        _ => None,
+    };
+    let via_cookie = unauth.is_some() && headers.get("authorization").is_none();
+    let created = match &unauth {
+        Some(s) => sessions::upgrade(&state, &s.uid, &user.id, pending, persistent).await?,
+        None => sessions::create(&state, Some(&user.id), &client_id, pending, persistent).await?,
+    };
+    let body = ok(json!({
         "UserID": user.id,
         "UID": created.uid,
         "AccessToken": created.access_token,
@@ -262,7 +266,20 @@ pub async fn auth(
         "LocalID": 0,
         "EventID": crate::events::latest_id(&state.db, &user.id).await?,
         "TemporaryPassword": 0,
-    })))
+    }));
+    let mut resp = axum::response::IntoResponse::into_response(body);
+    if via_cookie {
+        for c in sessions::auth_cookies(
+            &state,
+            &created.uid,
+            &created.access_token,
+            &created.refresh_token,
+            persistent,
+        ) {
+            resp.headers_mut().append(axum::http::header::SET_COOKIE, c);
+        }
+    }
+    Ok(resp)
 }
 
 #[derive(Deserialize)]

@@ -51,6 +51,8 @@ locked with a secret the client generates. It returns `Token` (`pst_...`). The s
 | POST | `/core/v4/addresses/setup` |
 | GET, PUT | `/core/v4/addresses/{id}` |
 | GET | `/core/v4/domains/available` |
+| GET | `/domains/available` |
+| GET | `/domains/premium` |
 | GET | `/core/v4/domains/premium` |
 | POST | `/core/v4/keys/setup` |
 | GET | `/core/v4/keys/salts` |
@@ -71,6 +73,8 @@ locked with a secret the client generates. It returns `Token` (`pst_...`). The s
 | PUT | `/core/v4/settings/{*field}` |
 | GET | `/core/v4/events/latest` |
 | GET | `/core/v4/events/{id}` |
+| GET | `/core/v5/events/latest` |
+| GET | `/core/v5/events/{id}` |
 | GET, POST | `/account/v4/personal-access-token` |
 | POST | `/account/v4/personal-access-token/session` |
 | DELETE | `/account/v4/personal-access-token/{id}` |
@@ -80,10 +84,13 @@ locked with a secret the client generates. It returns `Token` (`pst_...`). The s
 | Methods | Path |
 |---|---|
 | GET | `/feature/v2/frontend` |
-| GET | `/feature/v2/frontend/{*rest}` |
+| GET, POST | `/feature/v2/frontend/{*rest}` |
 | GET | `/core/v4/features` |
 | GET, PUT | `/core/v4/features/{*rest}` |
 | GET | `/payments/v4/plans` |
+| GET | `/payments/v4/plans/default` |
+| GET | `/payments/v5/plans/default` |
+| GET | `/payments/v5/web-configuration` |
 | GET | `/payments/v5/plans` |
 | GET | `/payments/v4/subscription` |
 | GET | `/payments/v5/subscription` |
@@ -100,7 +107,11 @@ locked with a secret the client generates. It returns `Token` (`pst_...`). The s
 | GET | `/core/v4/notifications` |
 | POST | `/data/v1/stats` |
 | POST | `/data/v1/stats/multiple` |
+| POST | `/data/v1/telemetry` |
+| POST | `/data/v1/metrics` |
 | POST | `/core/v4/reports/bug` |
+| POST | `/core/v4/reports/sentry/{*rest}` |
+| GET | `/challenge/v4/html` |
 | POST | `/core/v4/metrics` |
 | GET | `/core/v4/images/logo` |
 | GET | `/core/v4/users/apps` |

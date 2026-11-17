@@ -189,3 +189,104 @@ fn hex_sha256(s: &str) -> String {
     use sha2::Digest;
     hex::encode(sha2::Sha256::digest(s.as_bytes()))
 }
+
+/// The account app logs in from an unauthenticated cookie session and keeps
+/// using that session afterwards: `auth` must upgrade it in place (same UID)
+/// and refresh its cookies. Signup also creates the first address, which the
+/// account app expects before calling `keys/setup`.
+#[tokio::test]
+async fn web_login_upgrades_cookie_session() {
+    use proton_srp::{RPGPVerifier, SRPAuth, SrpHashVersion};
+
+    let s = server().await;
+    let name = unique("erin");
+    let c = Client::signup(&s, &name, "pw").await;
+    let addresses = c.get("core/v4/addresses").await;
+    assert!(
+        addresses["Addresses"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|a| a["Email"]
+                .as_str()
+                .unwrap()
+                .starts_with(&format!("{name}@"))),
+        "signup should create <username>@<mail_domain>: {addresses}"
+    );
+
+    let http = reqwest::Client::builder()
+        .cookie_store(true)
+        .build()
+        .unwrap();
+    let call = |method: reqwest::Method, path: &str, uid: &str| {
+        http.request(method, format!("{}/{path}", s.base))
+            .header("x-pm-appversion", "web-account@5.0.0")
+            .header("x-pm-uid", uid.to_string())
+    };
+
+    // Unauthenticated session, converted to cookies.
+    let unauth: serde_json::Value = call(reqwest::Method::POST, "auth/v4/sessions", "")
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    let uid = unauth["UID"].as_str().unwrap().to_string();
+    let r = call(reqwest::Method::POST, "core/v4/auth/cookies", &uid)
+        .json(&json!({ "UID": uid, "RefreshToken": unauth["RefreshToken"], "State": "s", "Persistent": 0 }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(r.status(), 200);
+
+    // SRP login over the cookie session (no bearer token).
+    let info: serde_json::Value = call(reqwest::Method::POST, "core/v4/auth/info", &uid)
+        .json(&json!({ "Username": name }))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    let auth = SRPAuth::new(
+        &RPGPVerifier::default(),
+        None,
+        "pw",
+        SrpHashVersion::V4,
+        info["Salt"].as_str().unwrap(),
+        info["Modulus"].as_str().unwrap(),
+        info["ServerEphemeral"].as_str().unwrap(),
+    )
+    .unwrap();
+    let proofs: proton_srp::SRPProofB64 = auth.generate_proofs().unwrap().into();
+    let r = call(reqwest::Method::POST, "core/v4/auth", &uid)
+        .json(&json!({
+            "Username": name,
+            "ClientEphemeral": proofs.client_ephemeral,
+            "ClientProof": proofs.client_proof,
+            "SRPSession": info["SRPSession"],
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(r.status(), 200);
+    assert!(
+        r.headers()
+            .get_all("set-cookie")
+            .iter()
+            .any(|v| v.to_str().unwrap().starts_with(&format!("AUTH-{uid}="))),
+        "login over a cookie session must refresh its cookies"
+    );
+    let body: serde_json::Value = r.json().await.unwrap();
+    assert_eq!(body["UID"], uid, "the session must be upgraded in place");
+
+    // The same cookie session is now logged in.
+    let r = call(reqwest::Method::GET, "core/v4/users", &uid)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(r.status(), 200);
+    let user: serde_json::Value = r.json().await.unwrap();
+    assert_eq!(user["User"]["Name"], name);
+}

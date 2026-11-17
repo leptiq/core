@@ -11,15 +11,32 @@ DOMAIN=example.com ./clients/build-webclients.sh
 DOMAIN=example.com BUILD_TARGET=firefox ./clients/build-webclients.sh
 ```
 
+The script builds both the extension and Proton's **account app**, which the
+extension needs for login and signup.
+
 - `API_ENV=example.com` makes the extension use `https://pass.example.com/api` and
-  log in through `https://account.example.com`.
-- `patch-extension-manifests.py` adds `*.example.com` next to the `proton.me`
-  patterns in the manifests (`externally_connectable`, content-script matches).
-  Without it the account page cannot hand the session to the extension.
-- Login uses Proton's **account app**: it does the SRP login and then forks the
-  session to the extension (`auth/v4/sessions/forks`). Build
-  `applications/account` from the same checkout and serve it at
-  `account.example.com` (see `docs/deployment.md`).
+  log in through `https://account.example.com`. The extension's webpack config
+  also rewrites the manifest's `account.`/`pass.` match patterns to that domain,
+  which lets the account page hand the session to the extension.
+- The account app does the SRP signup/login and then forks the session to the
+  extension (`auth/v4/sessions/forks`). Serve its `dist/` at
+  `account.example.com`, with `/api` proxied to passhost (see
+  `docs/deployment.md`).
+- The script works around the parts of the public WebClients mirror that only
+  build inside Proton's network (a missing preinstall script, internal npm
+  registries, internal-only test packages). It only edits the checkout.
+- For Firefox, load `dist/` as a temporary add-on (`about:debugging`) or sign it
+  with `web-ext sign` for a permanent install.
+
+Tested end to end with Firefox against a local instance: signup in the account
+app, session fork to the extension, initial sync (default vault creation), and
+saving a login from a web page through the extension's "Save login" prompt.
+
+For a local test setup with a port, e.g. `DOMAIN=passhost.localhost:8443`: the
+`*.localhost` names resolve to 127.0.0.1 in Firefox without DNS changes, the
+script strips the port from the manifest patterns, and a self-signed wildcard
+certificate for `*.passhost.localhost` works once its exception has been
+accepted for each host (`pass.`, `account.`, `account-api.`).
 
 ## Pass web app
 

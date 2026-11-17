@@ -12,6 +12,45 @@ use crate::{
     util::{ok, ok_empty},
 };
 
+/// Clients send crash reports here (Sentry envelopes). We don't forward them
+/// anywhere, but log the error messages: they are the quickest way to see
+/// which response a client could not handle.
+async fn sentry_report(body: axum::body::Bytes) -> Json<Value> {
+    let text = String::from_utf8_lossy(&body);
+    for line in text.lines() {
+        if let Ok(v) = serde_json::from_str::<Value>(line)
+            && let Some(values) = v["exception"]["values"].as_array()
+        {
+            for e in values {
+                let frames = e["stacktrace"]["frames"]
+                    .as_array()
+                    .map(|f| {
+                        f.iter()
+                            .rev()
+                            .take(6)
+                            .filter_map(|fr| fr["function"].as_str())
+                            .collect::<Vec<_>>()
+                            .join(" < ")
+                    })
+                    .unwrap_or_default();
+                tracing::warn!(
+                    "client error report: {}: {} [{}]",
+                    e["type"].as_str().unwrap_or("?"),
+                    e["value"].as_str().unwrap_or("?"),
+                    frames
+                );
+            }
+        }
+    }
+    ok_empty()
+}
+
+/// Website logos are fetched from Proton's logo service; we have none, and a
+/// 404 makes clients fall back to their generic icon.
+async fn no_logo() -> axum::http::StatusCode {
+    axum::http::StatusCode::NOT_FOUND
+}
+
 async fn empty() -> Json<Value> {
     ok_empty()
 }
@@ -27,6 +66,22 @@ async fn features() -> Json<Value> {
 
 async fn plans() -> Json<Value> {
     ok(json!({ "Plans": [], "DefaultPlans": [] }))
+}
+
+/// No plans are sold here; clients fall back to their built-in free plan.
+async fn plans_default() -> axum::response::Response {
+    use axum::response::IntoResponse;
+    crate::error::ApiError::new(
+        axum::http::StatusCode::NOT_FOUND,
+        crate::error::code::NOT_FOUND,
+        "No default plan",
+    )
+    .into_response()
+}
+
+/// Chargebee configuration; empty because payments are disabled.
+async fn web_configuration() -> Json<Value> {
+    ok(json!({ "Site": "", "PublishableKey": "", "Domain": "" }))
 }
 
 async fn subscription() -> Json<Value> {
@@ -76,7 +131,7 @@ async fn notifications() -> Json<Value> {
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/feature/v2/frontend", get(feature_flags))
-        .route("/feature/v2/frontend/{*rest}", get(feature_flags))
+        .route("/feature/v2/frontend/{*rest}", get(feature_flags).post(empty))
         .route("/core/v4/features", get(features))
         .route("/core/v4/features/{*rest}", get(features).put(empty))
         .route("/payments/v4/plans", get(plans))
@@ -95,10 +150,16 @@ pub fn routes() -> Router<AppState> {
         .route("/vpn/v1/location", get(vpn_location))
         .route("/core/v4/notifications", get(notifications))
         .route("/data/v1/stats", post(empty))
+        .route("/data/v1/telemetry", post(empty))
+        .route("/data/v1/metrics", post(empty))
+        .route("/payments/v4/plans/default", get(plans_default))
+        .route("/payments/v5/plans/default", get(plans_default))
+        .route("/payments/v5/web-configuration", get(web_configuration))
         .route("/data/v1/stats/multiple", post(empty))
         .route("/core/v4/reports/bug", post(empty))
+        .route("/core/v4/reports/sentry/{*rest}", post(sentry_report))
         .route("/core/v4/metrics", post(empty))
-        .route("/core/v4/images/logo", get(empty))
+        .route("/core/v4/images/logo", get(no_logo))
         .route("/core/v4/users/apps", get(|| async { ok(json!({ "Apps": ["pass"] })) }))
         .route("/core/v4/checklist/{*rest}", get(|| async { ok(json!({ "Items": [], "CreatedAt": 0, "ExpiresAt": 0, "Visible": false, "Display": "Hidden" })) }))
         .route("/account/v1/onboarding", get(empty).put(empty))

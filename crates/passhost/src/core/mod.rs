@@ -35,6 +35,8 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/core/v4/domains/available", get(addresses::domains))
         .route("/core/v4/domains/premium", get(addresses::premium_domains))
+        .route("/domains/available", get(addresses::domains))
+        .route("/domains/premium", get(addresses::premium_domains))
         .route("/core/v4/keys/setup", post(keys::setup))
         .route("/core/v4/keys/salts", get(keys::salts))
         .route("/core/v4/keys/all", get(keys::public_keys_all))
@@ -60,6 +62,9 @@ pub fn routes() -> Router<AppState> {
         .route("/core/v4/settings/{*field}", put(settings::update))
         .route("/core/v4/events/latest", get(events::latest))
         .route("/core/v4/events/{id}", get(events::get))
+        // v5 has the same response shape as v4.
+        .route("/core/v5/events/latest", get(events::latest))
+        .route("/core/v5/events/{id}", get(events::get))
         .route(
             "/account/v4/personal-access-token",
             get(crate::pass::pat::list).post(crate::pass::pat::create),

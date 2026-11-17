@@ -3,7 +3,10 @@
 //! A session is identified by the `x-pm-uid` header plus either an
 //! `Authorization: Bearer <token>` header or an `AUTH-<UID>` cookie.
 
-use axum::{extract::FromRequestParts, http::request::Parts};
+use axum::{
+    extract::FromRequestParts,
+    http::{HeaderMap, request::Parts},
+};
 
 use crate::{
     app::AppState,
@@ -40,12 +43,12 @@ pub struct AuthUser {
     pub session: Session,
 }
 
-fn header<'a>(parts: &'a Parts, name: &str) -> Option<&'a str> {
-    parts.headers.get(name).and_then(|v| v.to_str().ok())
+fn header<'a>(headers: &'a HeaderMap, name: &str) -> Option<&'a str> {
+    headers.get(name).and_then(|v| v.to_str().ok())
 }
 
-pub fn cookie(parts: &Parts, name: &str) -> Option<String> {
-    for value in parts.headers.get_all("cookie") {
+pub fn cookie(headers: &HeaderMap, name: &str) -> Option<String> {
+    for value in headers.get_all("cookie") {
         let Ok(s) = value.to_str() else { continue };
         for pair in s.split(';') {
             let pair = pair.trim();
@@ -59,18 +62,20 @@ pub fn cookie(parts: &Parts, name: &str) -> Option<String> {
     None
 }
 
-async fn load_session(parts: &Parts, state: &AppState) -> Result<Session, ApiError> {
-    let uid = header(parts, "x-pm-uid")
+/// Loads the session a request authenticates with (`x-pm-uid` plus a bearer
+/// token or the `AUTH-<uid>` cookie).
+pub async fn load_session(headers: &HeaderMap, state: &AppState) -> Result<Session, ApiError> {
+    let uid = header(headers, "x-pm-uid")
         .ok_or_else(ApiError::unauthorized)?
         .to_string();
-    let token = match header(parts, "authorization") {
+    let token = match header(headers, "authorization") {
         Some(h) => h
             .strip_prefix("Bearer ")
             .or_else(|| h.strip_prefix("bearer "))
             .unwrap_or(h)
             .trim()
             .to_string(),
-        None => cookie(parts, &format!("AUTH-{uid}")).ok_or_else(ApiError::unauthorized)?,
+        None => cookie(headers, &format!("AUTH-{uid}")).ok_or_else(ApiError::unauthorized)?,
     };
     let row: Option<(Option<String>, String, String, i64, i64, i64)> = sqlx::query_as(
         "SELECT user_id, access_hash, scopes, pending_2fa, access_expires, password_scope_until FROM sessions WHERE uid = $1",
@@ -101,7 +106,7 @@ impl FromRequestParts<AppState> for MaybeSession {
         if let Some(s) = parts.extensions.get::<Session>() {
             return Ok(MaybeSession(s.clone()));
         }
-        let s = load_session(parts, state).await?;
+        let s = load_session(&parts.headers, state).await?;
         parts.extensions.insert(s.clone());
         Ok(MaybeSession(s))
     }

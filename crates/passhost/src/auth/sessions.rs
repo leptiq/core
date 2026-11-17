@@ -85,6 +85,45 @@ pub async fn create(
     })
 }
 
+/// Logs an existing unauthenticated session in, keeping its UID. Web clients
+/// create an unauthenticated cookie session first and keep using it after
+/// `auth`, so the login has to upgrade that session rather than start a new
+/// one.
+pub async fn upgrade(
+    state: &AppState,
+    uid: &str,
+    user_id: &str,
+    pending_2fa: bool,
+    persistent: bool,
+) -> ApiResult<Created> {
+    let access_token = new_token(32);
+    let refresh_token = new_token(32);
+    let scopes = scopes_for(true, pending_2fa);
+    let t = now();
+    sqlx::query(
+        "UPDATE sessions SET user_id = $1, access_hash = $2, refresh_hash = $3, scopes = $4, pending_2fa = $5, \
+         persistent = $6, access_expires = $7, refresh_expires = $8, last_used = $9 WHERE uid = $10 AND user_id IS NULL",
+    )
+    .bind(user_id)
+    .bind(sha256_hex(&access_token))
+    .bind(sha256_hex(&refresh_token))
+    .bind(scopes.join(" "))
+    .bind(pending_2fa as i64)
+    .bind(persistent as i64)
+    .bind(t + state.config.access_token_ttl)
+    .bind(t + state.config.refresh_token_ttl)
+    .bind(t)
+    .bind(uid)
+    .execute(&state.db)
+    .await?;
+    Ok(Created {
+        uid: uid.to_string(),
+        access_token,
+        refresh_token,
+        scopes,
+    })
+}
+
 /// Marks a session's 2FA step complete, granting full scopes.
 pub async fn complete_2fa(state: &AppState, uid: &str) -> ApiResult<Vec<String>> {
     let scopes = scopes_for(true, false);
@@ -188,7 +227,7 @@ fn cookie_from(headers: &HeaderMap, name: &str) -> Option<String> {
     None
 }
 
-fn auth_cookies(
+pub fn auth_cookies(
     state: &AppState,
     uid: &str,
     access: &str,

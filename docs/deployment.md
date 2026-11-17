@@ -8,10 +8,17 @@ The official web clients expect these hosts:
 |---|---|
 | `pass.example.com` | Pass web app (static files) and `/api` → passhost |
 | `account.example.com` | Account app (static files, login/signup) and `/api` → passhost |
+| `account-api.example.com` | → passhost (the account app's anti-abuse challenge frame, `/challenge/v4/html`) |
 | `api.example.com` | API root for the Android app (`PROD_ENV_URL=example.com`) |
 
 passhost answers on both `/api/...` and `/...` (`base_paths` in the config), so one
-instance can serve all three hosts.
+instance can serve all of these hosts.
+
+The account app's signup and login forms load an iframe from
+`account-api.<domain>/challenge/v4/html` (Proton's bot detection; it also draws
+the username field). passhost serves a stand-in that draws the fields and
+reports an empty fingerprint. Without that host the forms wait for the frame
+to time out (about a minute) and the username field is missing.
 
 ### Caddy example
 
@@ -38,7 +45,7 @@ account.example.com {
     }
 }
 
-api.example.com {
+account-api.example.com, api.example.com {
     reverse_proxy 127.0.0.1:8080
 }
 ```

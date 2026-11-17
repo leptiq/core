@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style id="passhost-styles"></style>
+<style>html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+// passhost stand-in for Proton's anti-abuse challenge frame.
+//
+// The account app renders some form fields (e.g. the signup username) into
+// this iframe: it sends us their HTML, we display it and forward user input
+// back so the real (hidden) inputs in the parent page receive it. Proton's
+// frame also collects a browser fingerprint; we report an empty one, which
+// passhost never checks.
+(function () {
+    var parentOrigin = '*';
+    var root = document.getElementById('root');
+
+    function send(msg) {
+        window.parent.postMessage(msg, parentOrigin);
+    }
+
+    var lastHeight = -1;
+    function sendRect() {
+        var height = Math.ceil(Math.max(root.getBoundingClientRect().height, root.scrollHeight));
+        if (height === lastHeight) return;
+        lastHeight = height;
+        send({ type: 'rect', payload: { height: height } });
+    }
+    // Styles and fonts can change the size after a render: keep reporting.
+    if (window.ResizeObserver) new ResizeObserver(sendRect).observe(root);
+    new MutationObserver(sendRect).observe(root, { childList: true, subtree: true, attributes: true });
+    setInterval(sendRect, 500);
+
+    function render(html) {
+        // Keep what the user typed and where the caret is across re-renders.
+        var values = {};
+        root.querySelectorAll('input[id], textarea[id]').forEach(function (el) {
+            values[el.id] = el.value;
+        });
+        var active = document.activeElement && document.activeElement.id;
+        var selStart, selEnd;
+        try {
+            selStart = document.activeElement.selectionStart;
+            selEnd = document.activeElement.selectionEnd;
+        } catch (e) {}
+
+        root.innerHTML = html;
+
+        root.querySelectorAll('input[id], textarea[id]').forEach(function (el) {
+            if (Object.prototype.hasOwnProperty.call(values, el.id)) el.value = values[el.id];
+        });
+        if (active) {
+            var el = document.getElementById(active);
+            if (el) {
+                el.focus();
+                try { el.setSelectionRange(selStart, selEnd); } catch (e) {}
+            }
+        }
+        sendRect();
+    }
+
+    function targetId(e) {
+        var el = e.target;
+        while (el && el !== root && !el.id) el = el.parentElement;
+        return el && el !== root ? el.id : undefined;
+    }
+
+    root.addEventListener('input', function (e) {
+        var id = targetId(e);
+        if (id) send({ type: 'event', payload: { type: 'input', id: id, value: e.target.value } });
+    });
+    root.addEventListener('keydown', function (e) {
+        var id = targetId(e);
+        if (id) send({ type: 'event', payload: { type: 'keydown', id: id, key: e.key } });
+    });
+    root.addEventListener('click', function (e) {
+        var id = targetId(e);
+        if (id) send({ type: 'event', payload: { type: 'click', id: id } });
+    });
+
+    window.addEventListener('message', function (event) {
+        if (event.source !== window.parent) return;
+        var data = event.data || {};
+        switch (data.type) {
+            case 'load':
+                var p = data.payload || {};
+                document.getElementById('passhost-styles').textContent = p.stylesRoot || '';
+                if (p.bodyClassName) document.body.className = p.bodyClassName;
+                send({ type: 'onload' });
+                break;
+            case 'html':
+                render(data.payload || '');
+                break;
+            case 'focus':
+                var sel = data.payload && data.payload.selector;
+                var el = sel && root.querySelector(sel);
+                if (el) el.focus();
+                break;
+            case 'env.loaded':
+                if (data.data && data.data.targetOrigin) parentOrigin = data.data.targetOrigin;
+                break;
+            case 'submit.broadcast':
+                var name = new URLSearchParams(location.search).get('Name') || 'challenge';
+                send({ type: 'child.message.data', data: { id: name, fingerprint: '' } });
+                break;
+        }
+    });
+
+    send({ type: 'init' });
+})();
+</script>
+</body>
+</html>
