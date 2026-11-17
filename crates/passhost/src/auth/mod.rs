@@ -35,6 +35,7 @@ pub fn routes() -> Router<AppState> {
                 .get(sessions::list)
                 .delete(sessions::revoke_others),
         )
+        .route("/auth/v4/sessions/local", get(sessions::list_local))
         .route("/auth/v4/sessions/{uid}", delete(sessions::revoke_one))
         .route(
             "/auth/v4/sessions/local/key",

@@ -6,7 +6,7 @@ The official web clients expect these hosts:
 
 | Host | Serves |
 |---|---|
-| `pass.example.com` | Pass web app (static files) and `/api` → passhost |
+| `pass.example.com` | Pass web app (static files, `applications/pass/dist`) and `/api` → passhost |
 | `account.example.com` | Account app (static files, login/signup) and `/api` → passhost |
 | `account-api.example.com` | → passhost (the account app's anti-abuse challenge frame, `/challenge/v4/html`) |
 | `api.example.com` | API root for the Android app (`PROD_ENV_URL=example.com`) |

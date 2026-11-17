@@ -307,8 +307,10 @@ pub async fn set_cookies(
     let token = req.refresh_token.clone().ok_or_else(refresh_invalid)?;
     let (access, refresh, _) = rotate(&state, &uid, &token).await?;
     let persistent = req.persistent == Some(1);
-    let mut resp = ok(json!({ "UID": uid, "LocalID": 0, "RefreshCounter": 1, "State": req.state }))
-        .into_response();
+    let local_id = local_id(&state, &uid).await?;
+    let mut resp =
+        ok(json!({ "UID": uid, "LocalID": local_id, "RefreshCounter": 1, "State": req.state }))
+            .into_response();
     for c in auth_cookies(&state, &uid, &access, &refresh, persistent) {
         resp.headers_mut().append(SET_COOKIE, c);
     }
@@ -409,7 +411,7 @@ pub async fn get_local_key(
             .fetch_optional(&state.db)
             .await?;
     match key.and_then(|k| k.0) {
-        Some(k) => Ok(ok(json!({ "Key": k }))),
+        Some(k) => Ok(ok(json!({ "ClientKey": k }))),
         None => Err(ApiError::not_found("Local key")),
     }
 }
@@ -442,4 +444,129 @@ pub async fn lock_password_scope(
         .execute(&state.db)
         .await?;
     Ok(ok_empty())
+}
+
+/// Signed-in sessions this browser holds valid cookies for (Proton's "local"
+/// sessions), as `(uid, user_id, local_id)`.
+pub async fn browser_sessions(
+    state: &AppState,
+    headers: &HeaderMap,
+) -> ApiResult<Vec<(String, String, i64)>> {
+    let mut tokens: std::collections::BTreeMap<String, (Option<String>, Option<String>)> =
+        Default::default();
+    for value in headers.get_all("cookie") {
+        let Ok(s) = value.to_str() else { continue };
+        for pair in s.split(';') {
+            let Some((k, v)) = pair.trim().split_once('=') else {
+                continue;
+            };
+            if let Some(uid) = k.strip_prefix("AUTH-") {
+                tokens.entry(uid.to_string()).or_default().0 = Some(v.to_string());
+            } else if let Some(uid) = k.strip_prefix("REFRESH-") {
+                tokens.entry(uid.to_string()).or_default().1 = Some(v.to_string());
+            }
+        }
+    }
+    let t = now();
+    let mut out = Vec::new();
+    for (uid, (access, refresh)) in tokens {
+        let row: Option<(Option<String>, String, String, i64, i64, i64)> = sqlx::query_as(
+            "SELECT user_id, access_hash, refresh_hash, access_expires, refresh_expires, local_id \
+             FROM sessions WHERE uid = $1",
+        )
+        .bind(&uid)
+        .fetch_optional(&state.db)
+        .await?;
+        let Some((Some(user_id), access_hash, refresh_hash, access_exp, refresh_exp, local_id)) =
+            row
+        else {
+            continue;
+        };
+        let access_ok = access.is_some_and(|a| sha256_hex(&a) == access_hash && access_exp >= t);
+        let refresh_ok =
+            refresh.is_some_and(|r| sha256_hex(&r) == refresh_hash && refresh_exp >= t);
+        if access_ok || refresh_ok {
+            out.push((uid, user_id, local_id));
+        }
+    }
+    Ok(out)
+}
+
+/// Gives a session that just signed in from a browser the lowest `LocalID`
+/// not used by the browser's other signed-in sessions.
+pub async fn assign_local_id(state: &AppState, headers: &HeaderMap, uid: &str) -> ApiResult<i64> {
+    let taken: Vec<i64> = browser_sessions(state, headers)
+        .await?
+        .into_iter()
+        .filter(|(u, _, _)| u != uid)
+        .map(|(_, _, l)| l)
+        .collect();
+    let local_id = (0..).find(|i| !taken.contains(i)).unwrap_or(0);
+    set_local_id(state, uid, local_id).await?;
+    Ok(local_id)
+}
+
+pub async fn set_local_id(state: &AppState, uid: &str, local_id: i64) -> ApiResult<()> {
+    sqlx::query("UPDATE sessions SET local_id = $1 WHERE uid = $2")
+        .bind(local_id)
+        .bind(uid)
+        .execute(&state.db)
+        .await?;
+    Ok(())
+}
+
+pub async fn local_id(state: &AppState, uid: &str) -> ApiResult<i64> {
+    let row: Option<(i64,)> = sqlx::query_as("SELECT local_id FROM sessions WHERE uid = $1")
+        .bind(uid)
+        .fetch_optional(&state.db)
+        .await?;
+    Ok(row.map(|r| r.0).unwrap_or(0))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct LocalSessionsQuery {
+    pub email: Option<String>,
+}
+
+/// `GET auth/v4/sessions/local`: the accounts signed in on this browser
+/// (from its session cookies), used by the web apps' account switcher.
+pub async fn list_local(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    axum::extract::Query(q): axum::extract::Query<LocalSessionsQuery>,
+) -> ApiResult<Json<Value>> {
+    let email = q.email.map(|e| e.trim().to_lowercase());
+    let mut sessions = Vec::new();
+    for (uid, user_id, local_id) in browser_sessions(&state, &headers).await? {
+        let user: Option<(String, String, String)> =
+            sqlx::query_as("SELECT name, display_name, email FROM users WHERE id = $1")
+                .bind(&user_id)
+                .fetch_optional(&state.db)
+                .await?;
+        let Some((name, display_name, primary)) = user else {
+            continue;
+        };
+        if let Some(e) = &email {
+            let owns: Option<(String,)> =
+                sqlx::query_as("SELECT id FROM addresses WHERE user_id = $1 AND email = $2")
+                    .bind(&user_id)
+                    .bind(e)
+                    .fetch_optional(&state.db)
+                    .await?;
+            if owns.is_none() && primary.to_lowercase() != *e {
+                continue;
+            }
+        }
+        sessions.push(json!({
+            "UID": uid,
+            "UserID": user_id,
+            "LocalID": local_id,
+            "Username": name,
+            "DisplayName": display_name,
+            "PrimaryEmail": primary,
+            "AccessType": 0,
+        }));
+    }
+    Ok(ok(json!({ "Sessions": sessions })))
 }

@@ -131,13 +131,22 @@ pub async fn pull(
     headers: HeaderMap,
     Path(selector): Path<String>,
 ) -> ApiResult<Json<Value>> {
-    let row: Option<(Option<String>, String, Option<String>, i64, Option<String>)> = sqlx::query_as(
-        "SELECT user_id, child_client_id, payload, expires, child_uid FROM session_forks WHERE selector = $1",
+    // user_id, child_client_id, payload, expires, child_uid, parent_uid
+    type ForkRow = (
+        Option<String>,
+        String,
+        Option<String>,
+        i64,
+        Option<String>,
+        Option<String>,
+    );
+    let row: Option<ForkRow> = sqlx::query_as(
+        "SELECT user_id, child_client_id, payload, expires, child_uid, parent_uid FROM session_forks WHERE selector = $1",
     )
     .bind(&selector)
     .fetch_optional(&state.db)
     .await?;
-    let Some((user_id, client_id, meta, expires, child_uid)) = row else {
+    let Some((user_id, client_id, meta, expires, child_uid, parent_uid)) = row else {
         return Err(ApiError::not_found("Fork"));
     };
     if expires < now() || child_uid.is_some() {
@@ -164,6 +173,12 @@ pub async fn pull(
         }
     }
     let created = sessions::create(&state, Some(&user_id), &client_id, false, false).await?;
+    // The child keeps the parent's per-browser account index.
+    let local_id = match &parent_uid {
+        Some(p) => sessions::local_id(&state, p).await?,
+        None => 0,
+    };
+    sessions::set_local_id(&state, &created.uid, local_id).await?;
     sqlx::query("UPDATE session_forks SET child_uid = $1 WHERE selector = $2")
         .bind(&created.uid)
         .bind(&selector)
@@ -171,7 +186,7 @@ pub async fn pull(
         .await?;
     Ok(ok(json!({
         "Payload": meta["Payload"],
-        "LocalID": 0,
+        "LocalID": local_id,
         "UID": created.uid,
         "AccessToken": created.access_token,
         "RefreshToken": created.refresh_token,

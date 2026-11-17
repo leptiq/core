@@ -289,4 +289,126 @@ async fn web_login_upgrades_cookie_session() {
     assert_eq!(r.status(), 200);
     let user: serde_json::Value = r.json().await.unwrap();
     assert_eq!(user["User"]["Name"], name);
+    assert_eq!(body["LocalID"], 0);
+
+    // The browser's signed-in accounts (account switcher).
+    let local: serde_json::Value = call(reqwest::Method::GET, "auth/v4/sessions/local", &uid)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    let sessions = local["Sessions"].as_array().unwrap();
+    assert_eq!(sessions.len(), 1, "{local}");
+    assert_eq!(sessions[0]["UID"], uid);
+    assert_eq!(sessions[0]["LocalID"], 0);
+    assert_eq!(sessions[0]["Username"], name);
+
+    // The persisted-session key is returned as `ClientKey`.
+    let r = call(reqwest::Method::PUT, "auth/v4/sessions/local/key", &uid)
+        .json(&json!({ "Key": "client-key" }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(r.status(), 200);
+    let key: serde_json::Value = call(reqwest::Method::GET, "auth/v4/sessions/local/key", &uid)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(key["ClientKey"], "client-key");
+
+    // Re-authentication sends `auth/info` without a username: the session's
+    // own user is used, so the SRP proof for its password verifies.
+    let info: serde_json::Value = call(reqwest::Method::POST, "core/v4/auth/info", &uid)
+        .json(&json!({ "Intent": "Proton", "ReauthScope": "password" }))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(info["Username"], name);
+    let reauth = SRPAuth::new(
+        &RPGPVerifier::default(),
+        None,
+        "pw",
+        SrpHashVersion::V4,
+        info["Salt"].as_str().unwrap(),
+        info["Modulus"].as_str().unwrap(),
+        info["ServerEphemeral"].as_str().unwrap(),
+    )
+    .unwrap();
+    let proofs: proton_srp::SRPProofB64 = reauth.generate_proofs().unwrap().into();
+    let r = call(reqwest::Method::PUT, "core/v4/users/unlock", &uid)
+        .json(&json!({
+            "ClientEphemeral": proofs.client_ephemeral,
+            "ClientProof": proofs.client_proof,
+            "SRPSession": info["SRPSession"],
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(r.status(), 200);
+
+    // A second account signed in on the same browser gets the next LocalID.
+    let other = unique("frank");
+    Client::signup(&s, &other, "pw2").await;
+    let unauth2: serde_json::Value = call(reqwest::Method::POST, "auth/v4/sessions", "")
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    let uid2 = unauth2["UID"].as_str().unwrap().to_string();
+    call(reqwest::Method::POST, "core/v4/auth/cookies", &uid2)
+        .json(&json!({ "UID": uid2, "RefreshToken": unauth2["RefreshToken"], "State": "s", "Persistent": 0 }))
+        .send()
+        .await
+        .unwrap();
+    let info: serde_json::Value = call(reqwest::Method::POST, "core/v4/auth/info", &uid2)
+        .json(&json!({ "Username": other }))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    let auth2 = SRPAuth::new(
+        &RPGPVerifier::default(),
+        None,
+        "pw2",
+        SrpHashVersion::V4,
+        info["Salt"].as_str().unwrap(),
+        info["Modulus"].as_str().unwrap(),
+        info["ServerEphemeral"].as_str().unwrap(),
+    )
+    .unwrap();
+    let proofs: proton_srp::SRPProofB64 = auth2.generate_proofs().unwrap().into();
+    let body: serde_json::Value = call(reqwest::Method::POST, "core/v4/auth", &uid2)
+        .json(&json!({
+            "Username": other,
+            "ClientEphemeral": proofs.client_ephemeral,
+            "ClientProof": proofs.client_proof,
+            "SRPSession": info["SRPSession"],
+        }))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(body["LocalID"], 1, "{body}");
+    let local: serde_json::Value = call(reqwest::Method::GET, "auth/v4/sessions/local", &uid2)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(local["Sessions"].as_array().unwrap().len(), 2, "{local}");
 }

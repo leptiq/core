@@ -11,8 +11,8 @@ DOMAIN=example.com ./clients/build-webclients.sh
 DOMAIN=example.com BUILD_TARGET=firefox ./clients/build-webclients.sh
 ```
 
-The script builds both the extension and Proton's **account app**, which the
-extension needs for login and signup.
+The script builds the extension, the Pass web app and Proton's **account
+app**, which the extension and web app need for login and signup.
 
 - `API_ENV=example.com` makes the extension use `https://pass.example.com/api` and
   log in through `https://account.example.com`. The extension's webpack config
@@ -40,10 +40,15 @@ accepted for each host (`pass.`, `account.`, `account-api.`).
 
 ## Pass web app
 
-Build `applications/pass` from WebClients with the API pointed at your domain
-(see the WebClients README; local development uses
-`pnpm run start-all --applications "proton-pass" --api <env>`). Serve it at
-`pass.example.com`. It finds the account app at `account.<same domain>`.
+`build-webclients.sh` also builds the web app (`applications/pass/dist`).
+Serve it at `pass.example.com` with `/api` proxied to passhost (see
+`docs/deployment.md`). It signs in through the account app at
+`account.<same domain>`, which forks the session to it.
+
+Tested end to end with Firefox: sign-in via the account app (including its
+account switcher and password re-authentication), vault sync and decryption of
+items saved by the extension, editing an item, the password lock, and
+unlocking after a reload.
 
 ## Android
 

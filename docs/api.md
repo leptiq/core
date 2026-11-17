@@ -28,6 +28,7 @@ locked with a secret the client generates. It returns `Token` (`pst_...`). The s
 | POST | `/auth/refresh` |
 | DELETE, GET, POST | `/auth/v4/sessions` |
 | DELETE | `/auth/v4/sessions/{uid}` |
+| GET | `/auth/v4/sessions/local` (signed-in accounts of this browser, from its cookies) |
 | GET, PUT | `/auth/v4/sessions/local/key` |
 | GET, POST | `/auth/v4/sessions/forks` |
 | GET | `/auth/sessions/forks` |

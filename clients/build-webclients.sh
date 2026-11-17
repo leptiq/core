@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Builds the official Proton Pass browser extension and the Proton account app
-# (login/signup) from ProtonMail/WebClients, pointed at a self-hosted passhost.
+# Builds the official Proton Pass browser extension, the Pass web app and the
+# Proton account app (login/signup) from ProtonMail/WebClients, pointed at a
+# self-hosted passhost.
 #
 #   DOMAIN=example.com ./build-webclients.sh                       # Chrome
 #   DOMAIN=example.com BUILD_TARGET=firefox ./build-webclients.sh  # Firefox
@@ -13,6 +14,7 @@
 #
 # Outputs:
 #   $WORK/applications/pass-extension/dist   unpacked extension
+#   $WORK/applications/pass/dist             Pass web app (static files)
 #   $WORK/applications/account/dist          account app (static files)
 set -euo pipefail
 
@@ -54,7 +56,7 @@ EOF
 #    including the internal-only ones.
 sed -i 's/^minimumReleaseAge: .*/minimumReleaseAge: 0/' pnpm-workspace.yaml
 
-CI=true $PNPM install --frozen-lockfile --filter 'proton-pass-extension...' --filter 'proton-account...'
+CI=true $PNPM install --frozen-lockfile --filter 'proton-pass-extension...' --filter 'proton-pass...' --filter 'proton-account...'
 
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
 
@@ -63,6 +65,13 @@ export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
     cd applications/account
     NODE_ENV=production TS_NODE_PROJECT=../../tsconfig.webpack.json \
         npx proton-pack build --appMode=sso --api=/api
+)
+
+# --- Pass web app: same-origin API (`/api` on pass.$DOMAIN) ---
+(
+    cd applications/pass
+    NODE_ENV=production TS_NODE_PROJECT=../../tsconfig.webpack.json \
+        npx proton-pack build --appMode=sso --api=/api --noLogicalScss
 )
 
 # --- Extension ---
@@ -79,4 +88,5 @@ export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
 )
 
 echo "Extension:   $WORK/applications/pass-extension/dist"
+echo "Web app:     $WORK/applications/pass/dist"
 echo "Account app: $WORK/applications/account/dist"

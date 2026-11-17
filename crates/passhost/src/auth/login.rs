@@ -144,9 +144,24 @@ pub struct InfoReq {
 
 pub async fn info(
     State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
     Json(req): Json<InfoReq>,
 ) -> ApiResult<Json<Value>> {
-    let username = req.username.unwrap_or_default();
+    let mut username = req.username.unwrap_or_default();
+    // Re-authentication (`ReauthScope`) sends no username: it is the
+    // signed-in session's own user.
+    if username.is_empty()
+        && let Ok(session) = super::extract::load_session(&headers, &state).await
+        && let Some(user_id) = session.user_id
+    {
+        let row: Option<(String,)> = sqlx::query_as("SELECT name FROM users WHERE id = $1")
+            .bind(&user_id)
+            .fetch_optional(&state.db)
+            .await?;
+        if let Some((name,)) = row {
+            username = name;
+        }
+    }
     let user = find_user(&state, &username).await?;
     let (version, salt, verifier, twofa) = match &user {
         Some(u) => (
@@ -251,6 +266,12 @@ pub async fn auth(
         Some(s) => sessions::upgrade(&state, &s.uid, &user.id, pending, persistent).await?,
         None => sessions::create(&state, Some(&user.id), &client_id, pending, persistent).await?,
     };
+    // Cookie (browser) logins get the next free per-browser account index.
+    let local_id = if via_cookie {
+        sessions::assign_local_id(&state, &headers, &created.uid).await?
+    } else {
+        0
+    };
     let body = ok(json!({
         "UserID": user.id,
         "UID": created.uid,
@@ -263,7 +284,7 @@ pub async fn auth(
         "Scopes": created.scopes,
         "2FA": twofa,
         "PasswordMode": 1,
-        "LocalID": 0,
+        "LocalID": local_id,
         "EventID": crate::events::latest_id(&state.db, &user.id).await?,
         "TemporaryPassword": 0,
     }));
