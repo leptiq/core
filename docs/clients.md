@@ -6,13 +6,13 @@ environments. leptiq does not ship modified client code. The scripts in
 
 ## Browser extension, web apps and account app
 
-Use [leptiq/webclients](https://github.com/leptiq/webclients). It patches Proton's
-WebClients with the Leptiq branding and with plans and upsells hidden, then builds
-the apps for your domain:
+Use [leptiq/webclients](https://github.com/leptiq/webclients), Leptiq's fork of
+Proton's WebClients (with upstream history). It carries the Leptiq branding and
+hides plans and upsells, and builds outside Proton's network:
 
 ```bash
-DOMAIN=example.com ./build.sh                                  # account, pass, pass-extension
-DOMAIN=example.com APPS="pass-extension" BUILD_TARGET=firefox ./build.sh
+DOMAIN=example.com leptiq/build.sh                                  # account, pass, pass-extension
+DOMAIN=example.com APPS="pass-extension" BUILD_TARGET=firefox leptiq/build.sh
 ```
 
 - `API_ENV=<domain>` makes the extension use `https://pass.<domain>/api` and log in
@@ -37,7 +37,7 @@ accepted for each host (`pass.`, `account.`, `account-api.`).
 
 ## Pass web app
 
-`build.sh` in leptiq/webclients also builds the web app (`applications/pass/dist`).
+`leptiq/build.sh` in leptiq/webclients also builds the web app (`applications/pass/dist`).
 Serve it at `pass.example.com` with `/api` proxied to leptiq (see
 `docs/deployment.md`). It signs in through the account app at
 `account.<same domain>`, which forks the session to it.
